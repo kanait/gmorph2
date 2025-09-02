@@ -1,0 +1,176 @@
+cmake_minimum_required(VERSION 3.10)
+project(gmorph2b8 C)
+
+# C標準を設定
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+
+# コンパイラフラグを設定
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O -g3 -funroll-loops -ansi -pedantic -ffast-math -D_DEFAULT_SOURCE -DSHM")
+
+# インクルードディレクトリを設定
+include_directories(/usr/include/X11)
+
+# ソースファイルのリスト
+set(SOURCES
+    main.c
+    smd.c
+    window.c
+    gldraw.c
+    draw.c
+    busy.c
+    pick.c
+    edit.c
+    sellist.c
+    file.c
+    screen.c
+    ppd.c
+    ppdsolid.c
+    ppdpart.c
+    ppdface.c
+    ppdloop.c
+    ppdvertex.c
+    ppdnormal.c
+    ppdedge.c
+    ppdlist.c
+    oppd.c
+    prique.c
+    sgprique.c
+    quadtree.c
+    loop.c
+    gmorph.c
+    grouping.c
+    harmonic.c
+    correspond.c
+    morphvec.c
+    paths.c
+    sgraph.c
+    sgpaths.c
+    hppd.c
+    hppdlod.c
+    hgppd.c
+    hged.c
+    glppd.c
+    ps.c
+    image.c
+    sgiimage.c
+    linbcg.c
+    trisquare.c
+    matlib.c
+    veclib.c
+    Progress.c
+    time.c
+)
+
+# 実行ファイルを作成
+add_executable(gmorph2b8 ${SOURCES})
+
+# 必要なライブラリを検索
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(X11 REQUIRED x11 xext xt xi sm ice)
+pkg_check_modules(XPM REQUIRED xpm)
+
+# Motifライブラリを検索（オプション）
+pkg_check_modules(MOTIF motif)
+if(NOT MOTIF_FOUND)
+    message(WARNING "Motif library not found via pkg-config. Trying to find it manually...")
+    find_library(MOTIF_LIBRARY NAMES Xm libXm)
+    find_path(MOTIF_INCLUDE_DIR NAMES Xm/Xm.h)
+    if(MOTIF_LIBRARY AND MOTIF_INCLUDE_DIR)
+        set(MOTIF_LIBRARIES ${MOTIF_LIBRARY})
+        set(MOTIF_INCLUDE_DIRS ${MOTIF_INCLUDE_DIR})
+        set(MOTIF_FOUND TRUE)
+        message(STATUS "Found Motif library: ${MOTIF_LIBRARY}")
+        message(STATUS "Found Motif include directory: ${MOTIF_INCLUDE_DIR}")
+    else()
+        # より詳細な検索を試行
+        find_library(MOTIF_LIBRARY 
+            NAMES Xm libXm
+            PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+        )
+        find_path(MOTIF_INCLUDE_DIR 
+            NAMES Xm/Xm.h
+            PATHS /usr/include /usr/include/X11 /usr/local/include
+        )
+        if(MOTIF_LIBRARY AND MOTIF_INCLUDE_DIR)
+            set(MOTIF_LIBRARIES ${MOTIF_LIBRARY})
+            set(MOTIF_INCLUDE_DIRS ${MOTIF_INCLUDE_DIR})
+            set(MOTIF_FOUND TRUE)
+            message(STATUS "Found Motif library (manual search): ${MOTIF_LIBRARY}")
+            message(STATUS "Found Motif include directory (manual search): ${MOTIF_INCLUDE_DIR}")
+        else()
+            message(WARNING "Motif library not found. You may need to install it:")
+            message(WARNING "  Ubuntu/Debian: sudo apt-get install libmotif-dev")
+            message(WARNING "  CentOS/RHEL: sudo yum install motif-devel")
+            message(WARNING "  Or disable Motif support if not needed")
+            message(WARNING "  Library search paths tried: /usr/lib, /usr/lib/x86_64-linux-gnu, /usr/local/lib")
+            message(WARNING "  Include search paths tried: /usr/include, /usr/include/X11, /usr/local/include")
+        endif()
+    endif()
+endif()
+
+# OpenGLライブラリを検索
+cmake_policy(SET CMP0072 NEW)
+find_package(OpenGL REQUIRED)
+
+# ライブラリをリンク
+target_link_libraries(gmorph2b8
+    ${X11_LIBRARIES}
+    ${XPM_LIBRARIES}
+    OpenGL::GL
+    OpenGL::GLU
+    GLw
+    m
+)
+
+# Motifライブラリが利用可能な場合のみリンク
+if(MOTIF_FOUND)
+    target_link_libraries(gmorph2b8 ${MOTIF_LIBRARIES})
+endif()
+
+# インクルードディレクトリを追加
+target_include_directories(gmorph2b8 PRIVATE
+    ${X11_INCLUDE_DIRS}
+    ${XPM_INCLUDE_DIRS}
+)
+
+# Motifライブラリが利用可能な場合のみインクルードディレクトリを追加
+if(MOTIF_FOUND)
+    target_include_directories(gmorph2b8 PRIVATE ${MOTIF_INCLUDE_DIRS})
+    # 手動検索で見つかった場合のインクルードディレクトリも追加
+    if(MOTIF_INCLUDE_DIR)
+        target_include_directories(gmorph2b8 PRIVATE ${MOTIF_INCLUDE_DIR})
+    endif()
+endif()
+
+# リンクディレクトリを追加
+target_link_directories(gmorph2b8 PRIVATE
+    ${X11_LIBRARY_DIRS}
+    ${XPM_LIBRARY_DIRS}
+    /usr/lib
+    /usr/X11/lib
+)
+
+# Motifライブラリが利用可能な場合のみリンクディレクトリを追加
+if(MOTIF_FOUND)
+    target_link_directories(gmorph2b8 PRIVATE ${MOTIF_LIBRARY_DIRS})
+endif()
+
+# リンクフラグを追加
+target_link_options(gmorph2b8 PRIVATE
+    ${X11_LDFLAGS_OTHER}
+    ${XPM_LDFLAGS_OTHER}
+)
+
+# Motifライブラリが利用可能な場合のみリンクフラグを追加
+if(MOTIF_FOUND)
+    target_link_options(gmorph2b8 PRIVATE ${MOTIF_LDFLAGS_OTHER})
+endif()
+
+# データディレクトリをコピー（オプション）
+# add_custom_command(TARGET gmorph2b8 POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#     ${CMAKE_SOURCE_DIR}/data.v2.0
+#     ${CMAKE_BINARY_DIR}/data
+# )
