@@ -1,5 +1,6 @@
-/* #include "stdafx.h" */
+﻿/* #include "stdafx.h" */
 #include <stdlib.h>
+#include <string.h>
 #include "sgiimage.h"
 
 /*
@@ -169,7 +170,8 @@ static int putlong(FILE *outf, unsigned long val)
 
 static void readheader(FILE *inf, IMAGE *image)
 {
-    bzero(image, sizeof(IMAGE));
+    memset(image, 0, sizeof(IMAGE));
+    /*bzero(image, sizeof(IMAGE));*/
     image->imagic = getshort(inf);
     image->type = getshort(inf);
     image->dim = getshort(inf);
@@ -182,7 +184,8 @@ static int writeheader(FILE *outf, IMAGE *image)
 {
     IMAGE t;
 
-    bzero(&t, sizeof(IMAGE));
+    memset(&t, 0, sizeof(IMAGE));
+    /*bzero(&t, sizeof(IMAGE));*/
     fwrite(&t,sizeof(IMAGE),1,outf);
     fseek(outf,0,SEEK_SET);
     putshort(outf,image->imagic);
@@ -530,7 +533,8 @@ int longstoimage(unsigned long *lptr, long xsize, long ysize, long zsize, char *
     rlebuf = (unsigned char *)malloc(rlebuflen);
     lumbuf = (unsigned long *)malloc(xsize*sizeof(long));
 
-    bzero(image,sizeof(IMAGE));
+    memset(image, 0, sizeof(IMAGE));
+    /*bzero(image,sizeof(IMAGE));*/
     image->imagic = IMAGIC; 
     image->type = RLE(1);
     if(zsize>1)

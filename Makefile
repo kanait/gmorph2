@@ -1,7 +1,7 @@
 RM = /bin/rm -f
 CP = /bin/cp
-XLIBS = -lX11 -lXext -lXmu -lXt -lXi -lSM -lICE
-LDLIBS = -lXpm -lGLw -lGLU -lGL -lXm -L/usr/X11/lib -lm $(XLIBS)
+XLIBS = -lX11 -lXext -lXt -lXi -lSM -lICE
+LDLIBS = -lXpm -lGLw -lGLU -L/usr/lib -lGL -lXm -L/usr/X11/lib -lm $(XLIBS)
 IMAGE = gmorph2b8
                      CC = gcc
                 ROOTDIR = ..
@@ -63,7 +63,6 @@ all: $(IMAGE)
 $(IMAGE): $(OBJS)
 	$(RM) $(IMAGE) $(CORE)
 	$(CC) $(LDOPTIONS) -o $(IMAGE) $(SMDOBJS) $(OBJS) $(LDLIBS)
-	$(CP) $(IMAGE) $(ROOTDIR)/bin
 
 clean:
 	$(RM) $(OBJS) $(CORE) $(IMAGE)

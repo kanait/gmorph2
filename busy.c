@@ -1,4 +1,4 @@
-/*****************************************************
+﻿/*****************************************************
  * busy.c: Demonstrate the use of a work procedure
  *         to unset a busy cursor
  *****************************************************/
@@ -12,7 +12,8 @@
 void DisplayBusyCursor ( Widget w ) 
 {
   Boolean RemoveBusyCursor ( XtPointer );
-  static cursor = NULL;
+  static Cursor cursor = 0;
+  /* static cursor = NULL;*/
 
   if ( !cursor ) 
     cursor = XCreateFontCursor ( XtDisplay ( w ), XC_watch );  
