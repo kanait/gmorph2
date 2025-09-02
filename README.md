@@ -33,44 +33,13 @@ After installing these libraries, simply run:
 make
 ```
 
-to create the executable file **gmorph2b8**.
+to create the executable file **gmorph2b8**, or use CMake:
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 Takashi Kanai
-
-
-gmorph2 is a research code for 3D morphing between two meshes with arbitrary connectivies.
-This code is an implementation of the following paper:
-
-Takashi Kanai, Hiromasa Suzuki, Fumihiko Kimura:
-"Metamorphosis of Arbitrary Triangular Meshes,"
-IEEE Computer Graphics and Applications, Vol.20, No.2, pp.62-75, March/April 2000.
-
-You can use this code only for research purpose *with no support*. I don't remember its contents because I created this code around 1997.
-
-Now I've succeeded to compile this code on Fedora 24 linux and later on ubuntu 24.04.
-To compile this code, you have to install the following library by using dnf (for Fedora):
-
-- motif-devel
-- mesa-libGL-devel
-- mesa-libGLU-devel
-- mesa-libGLw-devel
-- libXpm-devel
-
-or apt (for ubuntu): 
-
-- libmotif-dev
-- libgl1-mesa-dev
-- libglu1-mesa-dev
-- libglw1-mesa-dev
-- libxpm-dev
-
-After installing these libraries, simply
-
-% make
-
-to create an exacutable file (gmorph2b8).
-
-Takashi Kanai
-
-
-
