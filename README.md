@@ -61,6 +61,10 @@ To start the GUI, use the following command. Note that the GUI requires an X11/G
 
 This will start the GUI.
 
+<p align="center">
+  <img alt="gmorph2b8" src="./gmorph2b8.png" width="70%" />
+</p>
+
 ### Command-line options (selected)
 * `-div <n>`: morphing division number (default: 100; also affects the animation smoothness in GUI mode).
 * `-smooth`: enable smooth shading.
