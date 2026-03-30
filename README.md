@@ -34,14 +34,15 @@ make
 
 ## Usage
 
-The executable `gmorph2b8` can be run in both command-line mode and GUI mode.
-So far, this program has been confirmed to generate morphing PPDs for the following GMH files.
+The `gmorph2b8` executable supports both command-line and GUI use.
+Morphing PPD generation has been verified for the following GMH files under `data.v2.0`.
+(Figure numbers are those in the paper cited above.)
 
-- bunny-tiger/bunny-tiger#1_SP001.gmh 
-- bunny-tiger/bunny-tiger_SP001.gmh
-- Delorean-Porsche/Delorean-Porsche_SP.gmh
-- star-pai/spf1_6nSP0002.gmh
-- torus-bottle/torus-bottle_SP008.gmh
+- bunny-tiger/bunny-tiger#1_SP001.gmh (Bunny's head - Tiger's head, rough corres., Figure 12(a))
+- bunny-tiger/bunny-tiger_SP001.gmh (Bunny's head - Tiger's head, fine corres., Figure 12(b))
+- Delorean-Porsche/Delorean-Porsche_SP.gmh (Delorean - Porsche, Figure 13)
+- star-pai/spf1_6nSP0002.gmh (Star - Pai, Figure 14)
+- torus-bottle/torus-bottle_SP008.gmh (Torus - Bottle, Figure 15)
 
 To generate a morphing PPD from the command line, go to the folder that contains the GMH file and run:
 
