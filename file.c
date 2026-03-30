@@ -212,17 +212,32 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
   int   gmh_ok(char *);
   int   gppd_ok( char * );
   void  find_fileheader( char *, char * );
+  void  drawwindow(int);
+  int   redraw;
 
   TextW = (Widget) XmFileSelectionBoxGetChild(w, XmDIALOG_TEXT);
   str = (char *) XmTextGetString(TextW);
   XtUnmanageChild( filesel );
   find_fileheader( str, (char *) tstr );
-  
-  if (swin->filed == SMDFILEPPD1)       ppd_ok(tstr, 0);
-  else if (swin->filed == SMDFILEPPD2)  ppd_ok(tstr, 1);
-  else if (swin->filed == SMDFILEGPPD)  gppd_ok( tstr );
-  else if (swin->filed == SMDFILEGMH)   gmh_ok(tstr);
-  
+
+  redraw = (swin->opend == SMDOPEN);
+  if (swin->filed == SMDFILEPPD1)
+    ppd_ok(tstr, 0);
+  else if (swin->filed == SMDFILEPPD2)
+    ppd_ok(tstr, 1);
+  else if (swin->filed == SMDFILEGPPD)
+    gppd_ok(tstr);
+  else if (swin->filed == SMDFILEGMH) {
+    if (gmh_ok(tstr) != SUCCEED)
+      redraw = 0;
+  }
+
+  /* ダイアログを閉じても GLw に Expose が来ないことがあり、読み込み直後に描画されない */
+  if (redraw) {
+    drawwindow(SCREEN1);
+    drawwindow(SCREEN2);
+  }
+
   XtFree(str);
 }
 

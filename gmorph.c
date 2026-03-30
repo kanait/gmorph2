@@ -1,6 +1,9 @@
 /* Copyright (c) 1997 Takashi Kanai; All rights reserved. */
 
 #include "cinc.h"
+#include <stdio.h>
+#include <string.h>
+
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
@@ -31,7 +34,7 @@ Sppd *ppdgmorph_v2( HPpd *hppd )
     displayinfo("hppd is not found.\n");
     return (Sppd *) NULL;
   }
-  if ( (hppd->ppd1 == (Sppd *) NULL) || (hppd->ppd1 == (Sppd *) NULL) ) {
+  if ( (hppd->ppd1 == (Sppd *) NULL) || (hppd->ppd2 == (Sppd *) NULL) ) {
     displayinfo("2 ppds are not found.\n");
     return (Sppd *) NULL;
   }
@@ -437,6 +440,36 @@ void write_gmh_file( char *file, HPpd *hppd )
   fclose(fp);
 }
 
+/* GMH 内の PPD 名が相対パスのとき、.gmh と同じディレクトリから開く */
+static void gmh_resolve_ppd_path(const char *gmhpath, const char *name,
+				 char *out, size_t outsz)
+{
+  const char *slash;
+
+  if (name == NULL || *name == '\0' || outsz == 0) {
+    if (outsz)
+      out[0] = '\0';
+    return;
+  }
+  if (name[0] == '/') {
+    snprintf(out, outsz, "%s", name);
+    return;
+  }
+  slash = strrchr(gmhpath, '/');
+  if (slash == NULL) {
+    snprintf(out, outsz, "%s", name);
+    return;
+  }
+  {
+    size_t dlen = (size_t)(slash - gmhpath + 1U);
+    if (dlen >= outsz)
+      dlen = outsz - 1U;
+    memcpy(out, gmhpath, dlen);
+    out[dlen] = '\0';
+    snprintf(out + dlen, outsz - dlen, "%s", name);
+  }
+}
+
 HPpd *open_gmh_file( char *file )
 {
   FILE      *fp;
@@ -451,6 +484,7 @@ HPpd *open_gmh_file( char *file )
   HEdge     *hed;
   HHalfedge *he;
   char      key[BUFSIZ], val[5][BUFSIZ], poi[5][BUFSIZ], buf[BUFSIZ], *bpt, stc[BUFSIZ];
+  char      ppdpath[BUFSIZ];
   Sppd      *open_ppd(char *);
   Spvt      *list_ppdvertex( Sppd *, Id );
   Sped      *find_ppdedge( Spvt *, Spvt * );
@@ -505,19 +539,30 @@ HPpd *open_gmh_file( char *file )
     } else if (mode == PPD_PPD) {
       
       sscanf(buf, "%s%s", key, val[0]);
-      
+      gmh_resolve_ppd_path(file, val[0], ppdpath, sizeof(ppdpath));
+
       if (id == 0) {
-	
-	ppd1 = open_ppd(val[0]);
+	ppd1 = open_ppd(ppdpath);
 	hppd->ppd1 = ppd1;
-	
+	if (ppd1 == (Sppd *) NULL) {
+	  displayinfo("Error: can't open ppd: %s\n", ppdpath);
+	  fprintf(stderr, "GMorph: can't open ppd: %s\n", ppdpath);
+	  fclose(fp);
+	  free_hppd(hppd);
+	  return (HPpd *) NULL;
+	}
       } else {
-	
-	ppd2 = open_ppd(val[0]);
+	ppd2 = open_ppd(ppdpath);
 	hppd->ppd2 = ppd2;
-	
+	if (ppd2 == (Sppd *) NULL) {
+	  displayinfo("Error: can't open ppd: %s\n", ppdpath);
+	  fprintf(stderr, "GMorph: can't open ppd: %s\n", ppdpath);
+	  fclose(fp);
+	  free_hppd(hppd);
+	  return (HPpd *) NULL;
+	}
       }
-      
+
       ++id;
       
     } else if (mode == PPD_HVERTEX) {

@@ -1262,7 +1262,7 @@ void HGsfTriangulation( HGsf *sf, HGfc *hgfc )
 
   free(edarray); free(newedarray);
   free(vtarray); free(newvtarray);
-  free(sfarray); free(newvtarray);
+  free(sfarray);
 
 /*   display("(after) %d surfaces are created.\n", n - 2 ); */
 /*   for ( j = 0; j < n-2; ++j) { */
@@ -1352,7 +1352,7 @@ void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc )
   }
   
   free(vtarray); free(newvtarray);
-  free(sfarray); free(newvtarray);
+  free(sfarray);
 
 }  
 

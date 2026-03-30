@@ -147,14 +147,15 @@ HGed *hged_in_hgfc( Spvt *sv, Spvt *ev, HGfc *hgfc )
 
   if ( hgfc == (HGfc *) NULL ) return (HGed *) NULL;
   for ( hged = hgfc->shged; hged != (HGed *) NULL; hged = hged->nxt ) {
-    /* これを使わなくてもよいように修正すべき */
+    /* ??????????????????????????? */
+    if ( hged->sv == (HGvt *) NULL || hged->ev == (HGvt *) NULL )
+      continue;
     if ( (hged->sv->vt == sv) && (hged->ev->vt == ev) ) 
       return hged;
     if ( (hged->sv->vt == ev) && (hged->ev->vt == sv) )
       return hged;
   }
-  return hged;
-    
+  return (HGed *) NULL;
 }
 /************************************************************************ */
 /************************************************************************ */
@@ -357,8 +358,8 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
       
     free(prm1); free(prm2);
 
-    /* hged->sp_type == SP_EDGE_BOUNDARY の整列 */
-    /* 本当はこんなところでやるべきことではない */
+    /* hged->sp_type == SP_EDGE_BOUNDARY ?????? */
+    /* ???????????????????????????? */
     
 /*     for ( lv = lp1->splv; lv->nxt != (Splv *) NULL; lv = lv->nxt ) { */
 /*       if ( lhgfc1 != NULL ) { */
@@ -399,9 +400,9 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
 /*       } */
 /*     } */
     
-    /* hgvt1 の hged2 に対する inc_ed を定める */
-    /* hgvt2 の hged1 に対する inc_ed を定める */
-    /* 境界エッジの位相を固定するために大変重要 */
+    /* hgvt1 ?? hged2 ???????? inc_ed ?????? */
+    /* hgvt2 ?? hged1 ???????? inc_ed ?????? */
+    /* ?????????????????????????????????? */
 
     if ( hed->rf != (HFace *) NULL ) {
 /*       display("lp1->lp2.\n"); */
@@ -474,10 +475,10 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
     
   }
   
-  /* あとの 3D vector の計算のために Hedvt は残しておく */
+  /* ????? 3D vector ???????????? Hedvt ??????????? */
 }
 
-/* hgvt1 の hged2 に対する inc_ed を定める */
+/* hgvt1 ?? hged2 ???????? inc_ed ?????? */
 void HGvtIncludeHGed( HEdge *hed, Splp *lp1, Splp *lp2,
 		      HGfc *hgfc1, HGfc *hgfc2, int from )
 {
@@ -701,7 +702,7 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
 /*     printhgfc( hgfc1, SRC ); */
 /*     printhgfc( hgfc2, TARGET ); */
     
-    /* 二つの hgfc を合成 */
+    /* ?????? hgfc ????? */
     hgfc_to_mhgfc( hgfc1, hgfc2, mhgfc );
     
     HGfcTriangulation_noEdge( mhgfc );
@@ -713,7 +714,7 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
     }
 
     
-    /* mhgfc の頂点はすべてここで gppd の頂点にする */
+    /* mhgfc ?????????????????? gppd ???????????? */
     mhgfc_to_gppd( mhgfc, gppd );
     
   }
@@ -733,7 +734,7 @@ void hgppdface_to_hgppdsurface( HGfc *hgfc )
   void printhgfc( HGfc *, int );
 
 /*   display("hgfc %d\n", hgfc->id ); */
-  /* これはいいかげん */
+  /* ?????????????? */
   makehgvtedlink( hgfc );
 
   for ( hgvt = hgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) {
@@ -882,11 +883,11 @@ void hgfc_to_mhgfc( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   void mhgfc_create_mhgsf( HGfc * );
   void CalcHGsfNorm( HGfc * );
   
-  /* hgvt の頂点を mhgfc にする */
+  /* hgvt ????????? mhgfc ????? */
   hgvt_to_mhgvt( hgfc1, mhgfc, SRC );
   hgvt_to_mhgvt( hgfc2, mhgfc, TARGET );
 
-  /* エッジの合成 */
+  /* ????????????? */
   hged_to_mhged( hgfc1, hgfc2, mhgfc );
 
 /*   for ( hgvt = mhgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) { */
@@ -898,7 +899,7 @@ void hgfc_to_mhgfc( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 /*       display("\ted %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
 /*     } */
 /*   } */
-  /* mhged の接続情報をもとに，mhgsf を生成 */
+  /* mhged ??????????????mhgsf ?????? */
   mhgfc_create_mhgsf( mhgfc );
 
 /*   CalcHGsfNorm( mhgfc ); */
@@ -937,8 +938,8 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   void mhgfc_create_mhged( HGfc *, HGfc *, HGfc * );
   void  tmp_hgfc_harmonicmap_to_ps( char *, HGfc *, HGfc *, HGfc * );
   
-  /** ここを位相優先法，記号摂動法にもとづく方法に変える **/
-  /* エッジ間の交点を調べ，mhgfc に頂点を生成する */
+  /** ????????????????????????????????????????? **/
+  /* ??????????????????????mhgfc ????????????????? */
 /*   display("edge_edge_intersection\n"); */
   hgfc_edge_edge_intersection( hgfc1, hgfc2, mhgfc );
 /*   display("ee end.\n"); */
@@ -948,7 +949,7 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 /*     tmp_hgfc_harmonicmap_to_ps( str, hgfc1, hgfc2, mhgfc ); */
 /*     hgfc_harmonicmap_to_ps( str, mhgfc ); */
 /*   } */
-  /* hged のエッジ分割情報をもとに，mhgfc のエッジを生成 */
+  /* hged ????????????????????mhgfc ??????????????? */
 /*   display("create_mhged\n"); */
   mhgfc_create_mhged( hgfc1, hgfc2, mhgfc );
 /*   display("cm end.\n"); */
@@ -962,13 +963,13 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   - 5.2 The Merging Algorithm -
 */
 /* 
-  isLineSegmentCrossing を記号摂動法に代える
+  isLineSegmentCrossing ???????????????
 */
 
 /*
   (sv->sp_type == SP_VERTEX_BOUNDARY) || (ev->sp_type != SP_VERTEX_BOUNDARY)  
-  の場合は別処理をする必要がある
-  -> する必要なし?
+  ??????????????????????
+  -> ??????????
 */
 
 void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
@@ -1098,7 +1099,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 	  }
 	} while ( (he = he->nxt) != f2->shghe );
 
-	/* 一本のエッジの交点探索 */
+	/* ??????????????????????? */
 	while ( edgelist2->en ) {
 
 	  e2 = edgelist2->senode->ed;
@@ -1117,7 +1118,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 	    /* create hgppdvertex */
 	    mhgvt = create_hgppdvertex( mhgfc );
 /* 	    display("mhgvt %d\n", mhgvt->no ); */
-	    /* これはあとで求める */
+	    /* ?????????????? */
 /* 	    mhgvt->vt = mvt; */
 	    mhgvt->sp_type = SP_VERTEX_NORMAL;
 	    mhgvt->from = FROM_INTSEC;
@@ -1126,7 +1127,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 				   &(mhgvt->uvw) );
 
 	    /* insert hgedvt in e1, e2 */
-	    /* hged2 の方は，hged1 の rv と lv を格納しておく */
+	    /* hged2 ???????hged1 ?? rv ?? lv ??????????? */
 	    /* create vertex->edge in counter-clockwise */
 	    hgedvt1 = create_hgedvt( mhgvt, e1 );
 	    hgedvt1->intsec_ed = e2;
@@ -1207,7 +1208,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 
   }
   
-  /* あとの 3D vector の計算のために HGedvt は残しておく */
+  /* ????? 3D vector ???????????? HGedvt ??????????? */
 }
 
 Boolean isEdgeValidforCandidate( HGed *e1, HGed *e2 )
@@ -1271,7 +1272,7 @@ HGsf *find_hgsf_in_hgfc( HGvt *hgvt, HGfc *hgfc )
 /*   } */
   if ( hgvt->sp_type == SP_VERTEX_NORMAL ) {
 
-    /* Kent の方法と同じ */
+    /* Kent ?????????? */
     if ( hgvt->inc_sf != (HGsf *) NULL ) return hgvt->inc_sf;
     
     for ( sf = hgfc->shgsf; sf != (HGsf *) NULL; sf = sf->nxt ) {
@@ -1285,8 +1286,8 @@ HGsf *find_hgsf_in_hgfc( HGvt *hgvt, HGfc *hgfc )
   } else if ( hgvt->sp_type == SP_VERTEX_BOUNDARY ) {
 
     /* use boundary information */
-    /* 境界でのエッジの位相は固定して扱う */
-    /* hedge_to_gppd によって決まる境界エッジの位相を用いる */
+    /* ?????????????????????????????? */
+    /* hedge_to_gppd ???????????????????????????????? */
     
     hged = hgvt->inc_ed;
 /*     display("\tinc ed found. %d\n", hged->no ); */
@@ -1306,6 +1307,29 @@ HGsf *find_hgsf_in_hgfc( HGvt *hgvt, HGfc *hgfc )
 
 }
 
+/* HGedvtSort frees and rebuilds hgfc2 HGedvt nodes; hgfc1 still points at the
+ * old mates. Restore symmetric links via intsec_ed and the shared mhgvt. */
+static void mhgfc_relink_cross_mesh_mates( HGfc *hgfc1 )
+{
+  HGed *hged;
+  HGedvt *hgev, *hgev2;
+
+  for ( hged = hgfc1->shged; hged != (HGed *) NULL; hged = hged->nxt ) {
+    for ( hgev = hged->shgev; hgev != (HGedvt *) NULL; hgev = hgev->nxt ) {
+      HGed *e2;
+      if ( hgev->intsec_ed == (HGed *) NULL ) continue;
+      e2 = hgev->intsec_ed;
+      for ( hgev2 = e2->shgev; hgev2 != (HGedvt *) NULL; hgev2 = hgev2->nxt ) {
+        if ( hgev2->intsec_ed == hged && hgev2->vt == hgev->vt ) {
+          hgev->mate = hgev2;
+          hgev2->mate = hgev;
+          break;
+        }
+      }
+    }
+  }
+}
+
 void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 {
   HGvt *hgvt;
@@ -1319,7 +1343,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   /* sort H2's intersection points */
   /* H1's points have already sorted. */
   /* decide hgvt1's inc_sf ( used in "hface_calc_morph_vector"(morphvec.c) ) */
-  /* まだよく整理されていない */
+  /* ?????????????????? */
 
 /*   display("aa\n"); */
   
@@ -1332,6 +1356,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
     HGedvtSort( hged );
 /*     display("(a) hged %d evn %d\n", hged->no, hged->hgevn ); */
   }
+  mhgfc_relink_cross_mesh_mates( hgfc1 );
 
 /*   display("bb\n"); */
 /*   for ( hgvt = hgfc2->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) { */
@@ -1351,7 +1376,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 
 /*   display("ee\n"); */
   /* re-order hgvted */
-  /* あまりよい方法ではない */
+  /* ?????????????? */
   HVertexCreateHGvted( mhgfc );
 /*   display("ff\n"); */
 }
@@ -1461,7 +1486,7 @@ void HGedvtSort( HGed *hged )
   } /*  while ( hged->hgevn ) */
 
   /* decide order */
-  /* ちょっといいかげん */
+  /* ????????????????? */
   reverse = HGedvtDecideOrder( hged->sv, hged->ev, sf, ef );
   
 /*   if ( (hged->sv->no == 57) ||  (hged->ev->no == 57) ) { */
@@ -1548,7 +1573,7 @@ Boolean HGedvtDecideOrder( HGvt *sv, HGvt *ev, HGsf *sf, HGsf *ef )
     if ( fc == sf ) return True;
   }
     
-  /* ここまでくるということはかなりあやしい */
+  /* ??????????????????????????? */
 /*   display("okasii! in HGedvtDecideOrder.\n"); */
   return False;
 }    
@@ -1652,7 +1677,7 @@ void HGfcCreateHGvted( HGfc *hgfc, HGfc *mhgfc )
 
   for ( hgvt = hgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) {
 
-    /* すでに時計と反対周りに並んでいるはず */
+    /* ???????????????????????????? */
     mhgvt = hgvt->mhgvt;
     
 /*     display("hgvt %d type %d\n", hgvt->no, hgvt->sp_type ); */
@@ -1786,7 +1811,7 @@ void HVertexCreateHGvted( HGfc *hgfc )
 
 /*       for ( ve = hgvt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) { */
 
-/* 	display("\t(途中) ed %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
+/* 	display("\t(????) ed %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
 /*       } */
       
       for ( i = 0; i < n - 2; ++i ) {
@@ -1852,7 +1877,7 @@ void mhgfc_create_mhgsf( HGfc *hgfc )
 
 /************************************************************************ */
 
-/* vt->mvt は基本的には必要ない ? */
+/* vt->mvt ???????????????? ? */
 void mhgfc_to_gppd ( HGfc *mhgfc, Sppd *gppd )
 {
   HGvt *hgvt;

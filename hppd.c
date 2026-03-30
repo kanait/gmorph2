@@ -1009,7 +1009,7 @@ void create_hloop( HFace *hfc, HPpd *hppd )
 int lp_start_end( Splp *lp, Spvt *vt )
 {
   if ( lp->splv->vt == vt ) return LP_START;
-  else LP_END;
+  return LP_END;
 }
 
 int check_hppdface( ScreenAtr *screen, HPpd *hppd )

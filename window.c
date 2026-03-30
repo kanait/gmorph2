@@ -15,12 +15,102 @@
 
 Widget progress = NULL;
 
-static int glxconfig[] = {
-  GLX_DOUBLEBUFFER, GLX_RGBA, GLX_DEPTH_SIZE, 16,
-  GLX_STENCIL_SIZE, 4,
-  GLX_RED_SIZE, 1, GLX_GREEN_SIZE, 1, GLX_BLUE_SIZE, 1,
-  None
-};
+/* レガシー glXChooseVisual（フォールバック） */
+static void choose_gl_visual_legacy(Display *dpy, int screen, ScreenAtr *sa)
+{
+  static int a0[] = {
+    GLX_DOUBLEBUFFER, GLX_RGBA, GLX_DEPTH_SIZE, 24,
+    GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8,
+    None
+  };
+  static int a1[] = {
+    GLX_DOUBLEBUFFER, GLX_RGBA, GLX_DEPTH_SIZE, 24,
+    GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8,
+    GLX_STENCIL_SIZE, 8,
+    None
+  };
+  static int a2[] = {
+    GLX_DOUBLEBUFFER, GLX_RGBA, GLX_DEPTH_SIZE, 24,
+    None
+  };
+  static int a3[] = {
+    GLX_DOUBLEBUFFER, GLX_RGBA, GLX_DEPTH_SIZE, 16,
+    GLX_STENCIL_SIZE, 4,
+    GLX_RED_SIZE, 1, GLX_GREEN_SIZE, 1, GLX_BLUE_SIZE, 1,
+    None
+  };
+  static int a4[] = {
+    GLX_RGBA, GLX_DEPTH_SIZE, 24,
+    GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8,
+    None
+  };
+  int *lists[] = { a0, a1, a2, a3, a4 };
+  size_t k;
+
+  sa->vi = NULL;
+  for (k = 0; k < sizeof(lists) / sizeof(lists[0]); k++) {
+    sa->vi = glXChooseVisual(dpy, screen, lists[k]);
+    if (sa->vi)
+      return;
+  }
+}
+
+/*
+ * NVIDIA 等では glXChooseVisual + glXCreateContext が X_GLXCreateContext で
+ * BadValue になることがある。GLX 1.3 の FBConfig + glXCreateNewContext を優先する。
+ */
+static void setup_gl_for_screen(Display *dpy, int screen, ScreenAtr *sa)
+{
+  int n;
+  GLXFBConfig *fbc;
+  static const int fb0[] = {
+    GLX_RENDER_TYPE, GLX_RGBA_BIT,
+    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+    GLX_DOUBLEBUFFER, True,
+    GLX_DEPTH_SIZE, 24,
+    GLX_RED_SIZE, 8,
+    GLX_GREEN_SIZE, 8,
+    GLX_BLUE_SIZE, 8,
+    None
+  };
+  static const int fb1[] = {
+    GLX_RENDER_TYPE, GLX_RGBA_BIT,
+    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+    GLX_DOUBLEBUFFER, True,
+    GLX_DEPTH_SIZE, 24,
+    None
+  };
+  static const int fb2[] = {
+    GLX_RENDER_TYPE, GLX_RGBA_BIT,
+    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+    GLX_DEPTH_SIZE, 24,
+    GLX_RED_SIZE, 8,
+    GLX_GREEN_SIZE, 8,
+    GLX_BLUE_SIZE, 8,
+    None
+  };
+
+  sa->glx_fbc = NULL;
+  sa->vi = NULL;
+
+  fbc = glXChooseFBConfig(dpy, screen, fb0, &n);
+  if (!fbc || n < 1)
+    fbc = glXChooseFBConfig(dpy, screen, fb1, &n);
+  if (!fbc || n < 1)
+    fbc = glXChooseFBConfig(dpy, screen, fb2, &n);
+
+  if (fbc && n >= 1) {
+    sa->vi = glXGetVisualFromFBConfig(dpy, fbc[0]);
+    if (sa->vi) {
+      sa->glx_fbc = (void *) fbc[0];
+      XFree(fbc);
+      return;
+    }
+    XFree(fbc);
+  }
+
+  choose_gl_visual_legacy(dpy, screen, sa);
+}
 
 /* "File" menu */
 
@@ -274,8 +364,15 @@ static void create3dwinpane(Widget parent, Widget tm, Widget wchrc, Widget pinfo
     XtManageChild(sa->fr3d);
 
     n = 0;
-    sa->vi = glXChooseVisual(XtDisplay(parent), XtWindow(parent), glxconfig);
-    sa->xc = glXCreateContext(XtDisplay(parent), sa->vi, None, GL_TRUE);
+    setup_gl_for_screen(XtDisplay(parent),
+			XScreenNumberOfScreen(XtScreen(parent)),
+			sa);
+    if (!sa->vi) {
+      fprintf(stderr,
+	      "gmorph2b8: no suitable GLX visual (FBConfig + legacy).\n");
+      exit(1);
+    }
+    sa->xc = NULL;
     XtSetArg(args[n], GLwNvisualInfo, sa->vi);  n++;
 /*     sa->glw = XtCreateManagedWidget("glw3d",  glwMDrawingAreaWidgetClass, */
 /* 				    sa->fr3d, args, n); */
@@ -288,6 +385,8 @@ static void create3dwinpane(Widget parent, Widget tm, Widget wchrc, Widget pinfo
 		(XtCallbackProc) resizewindow3dcb, (XtPointer) i);
     XtAddCallback(sa->glw, GLwNinputCallback,
 		  (XtCallbackProc) inputwindow3dcb, (XtPointer) i);
+    /* GLwCreateMDrawingArea は未管理。Manage しないと realize されず描画領域が出ない */
+    XtManageChild(sa->glw);
   }
 }
 
@@ -381,6 +480,22 @@ static void wdis3dcb(Widget w, XtPointer cld, XmToggleButtonCallbackStruct *cad)
   
 }
 
+static int disp_kind_initial_on(int kind)
+{
+  switch (kind) {
+  case DISP_WIRE:   return swin->dis3d.wire    == SMD_ON;
+  case DISP_SHADE:  return swin->dis3d.shading == SMD_ON;
+  case DISP_CPOINT: return swin->dis3d.cpoint  == SMD_ON;
+  case DISP_CMESH:  return swin->dis3d.cmesh   == SMD_ON;
+  case DISP_LOOP:   return swin->dis3d.loop    == SMD_ON;
+  case DISP_GROUP:  return swin->dis3d.group   == SMD_ON;
+  case DISP_SPATH:  return swin->dis3d.spath   == SMD_ON;
+  case DISP_HMAP:   return swin->dis3d.hmap    == SMD_ON;
+  case DISP_COAXIS: return swin->dis3d.coaxis  == SMD_ON;
+  default:          return 0;
+  }
+}
+
 static void wdis3denhcb( Widget w, XtPointer cld, XmToggleButtonCallbackStruct *cad )
 {
   void  drawwindow(int);
@@ -414,6 +529,8 @@ Widget CreateXpmDisplayToggleButton( Widget parent, int kind, char **icon_data )
   n = 0;
   XtSetArg(args[n], XmNindicatorOn, False);  n++;
   XtSetArg(args[n], XmNshadowThickness, 2);  n++;
+  if (disp_kind_initial_on(kind))
+    { XtSetArg(args[n], XmNset, True); n++; }
   button = XtCreateManagedWidget ( "button", xmToggleButtonWidgetClass,
 				   parent, args, n);
   /*

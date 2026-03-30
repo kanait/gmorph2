@@ -1179,6 +1179,7 @@ typedef struct _screenatr {
   Widget         glw;
   XVisualInfo    *vi;
   GLXContext     xc;
+  void           *glx_fbc;       /* GLXFBConfig from glXChooseFBConfig, else NULL */
   Widget         fr3d;
 
   /* width, height */

@@ -89,7 +89,10 @@ Spvt *create_ppdvertex( Sppd *ppd )
 Spvt *list_ppdvertex( Sppd *ppd, Id id )
 {
   Spvt *vt;
-  
+
+  if (ppd == (Sppd *) NULL)
+    return (Spvt *) NULL;
+
   for (vt = ppd->spvt; vt != (Spvt *) NULL; vt = vt->nxt) {
     if (vt->no == id) return vt;
   }

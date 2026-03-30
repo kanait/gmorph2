@@ -115,7 +115,9 @@ cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL REQUIRED)
 
 # ライブラリをリンク
+# Motif を Xt/X11 より前にリンク（NEEDED 順が後だと起動時 BadWindow になることがある）
 target_link_libraries(gmorph2b8
+    $<$<BOOL:${MOTIF_FOUND}>:${MOTIF_LIBRARIES}>
     ${X11_LIBRARIES}
     ${XPM_LIBRARIES}
     OpenGL::GL
@@ -123,11 +125,6 @@ target_link_libraries(gmorph2b8
     GLw
     m
 )
-
-# Motifライブラリが利用可能な場合のみリンク
-if(MOTIF_FOUND)
-    target_link_libraries(gmorph2b8 ${MOTIF_LIBRARIES})
-endif()
 
 # インクルードディレクトリを追加
 target_include_directories(gmorph2b8 PRIVATE

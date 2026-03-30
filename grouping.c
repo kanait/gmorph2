@@ -251,7 +251,7 @@ HGppd *ppdgroup( Sppd *ppd, HPpd *hppd, int ppdid )
     }
   }
 
-
+  return hgppd;
 }
 
 #define TMP_CVN 128

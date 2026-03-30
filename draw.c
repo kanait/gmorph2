@@ -8,8 +8,6 @@
 
 void init_gl3d(ScreenAtr *screen)
 {
-  int   i, n;
-  Arg   args[5];
   Light default_light =  {
     TRUE,
     {0.1, 0.1, 0.1, 1.0},	/* ambient */
@@ -24,13 +22,28 @@ void init_gl3d(ScreenAtr *screen)
   int   light_init(Light *);
   void  definelinestyle(void);
 
-  n = 0;
-  XtSetArg(args[n], GLwNvisualInfo, &(screen->vi)); n++;
-  XtGetValues(screen->glw, args, n);
+  {
+    Display *dpy = XtDisplay(screen->glw);
 
-  screen->xc = glXCreateContext( XtDisplay(screen->glw), screen->vi,
-				 None, GL_FALSE );
-  GLwDrawingAreaMakeCurrent(screen->glw, screen->xc);
+    /* create3dwinpane で選んだ vi を使う（XtGetValues は GLw によっては壊れる） */
+    if (!screen->vi) {
+      fprintf(stderr, "gmorph2b8: missing GLX visual (init_gl3d).\n");
+      exit(1);
+    }
+    if (screen->xc)
+      glXDestroyContext(dpy, screen->xc);
+    if (screen->glx_fbc)
+      screen->xc = glXCreateNewContext(dpy, (GLXFBConfig) screen->glx_fbc,
+					 GLX_RGBA_TYPE, None, True);
+    else
+      screen->xc = glXCreateContext(dpy, screen->vi, None, True);
+    if (!screen->xc) {
+      fprintf(stderr,
+	      "gmorph2b8: glXCreateNewContext/glXCreateContext failed (init_gl3d).\n");
+      exit(1);
+    }
+    GLwDrawingAreaMakeCurrent(screen->glw, screen->xc);
+  }
 
   screen->light = default_light;
 

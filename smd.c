@@ -47,8 +47,9 @@ Swin *create_swin( void )
 
 void display3d_initialize(Disp3D *disp)
 {
+  /* 既定はシェーディングのみ ON（ワイヤは OFF） */
   disp->wire    = SMD_OFF;
-  disp->shading = SMD_OFF;
+  disp->shading = SMD_ON;
   disp->cpoint  = SMD_OFF;
   disp->cmesh   = SMD_OFF;
   disp->loop    = SMD_OFF;
@@ -74,6 +75,9 @@ void screenatr_initialize(ScreenAtr *screen)
   /* GLX window */
   screen->glw    = NULL;
   screen->fr3d   = NULL;
+  screen->vi     = NULL;
+  screen->xc     = NULL;
+  screen->glx_fbc = NULL;
   
   /* resize or not */
   screen->resize = SMD_OFF;
