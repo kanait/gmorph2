@@ -827,6 +827,8 @@ Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge )
     if ( nvt == start_vertex ) {
       return True;
     }
+    if ( nvt == (HGvt *)NULL ) return False;
+    if ( ned == (HGed *)NULL ) return False;
     vt = nvt;
     ed = ned;
   }

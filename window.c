@@ -11,7 +11,13 @@
 
 #include "Progress.h"
 
+#include <unistd.h>
+
 #define  RSIZE   150
+/* Morph animation frame delay (microseconds).
+ * GUI "Start" button currently has no delay, so frames can be too fast
+ * to see. */
+#define MORPH_FRAME_USEC 20000
 
 Widget progress = NULL;
 
@@ -712,6 +718,7 @@ static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
     
     ppd = swin->screenatr[0].view_ppd = swin->morph_ppd;
     div = swin->mdiv - 1;
+    if ( div < 1 ) div = 1;
     if ( ppd != (Sppd *) NULL ) {
       for (a = 0; a <= div; ++a) {
 	q = (double) a / (double) div;
@@ -731,6 +738,7 @@ static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
 	  ppdnorm( ppd );
 	}
 	drawwindow( SCREEN1 );
+	usleep(MORPH_FRAME_USEC);
 	if ( swin->saveimg ) {
 	  sprintf( file, "mymorph_%03d.sgi", a );
 	  (void) saveRgbImage( file,

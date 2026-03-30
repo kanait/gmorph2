@@ -97,7 +97,7 @@ void main( int argc, char *argv[] )
   enh_dispflag = SMD_OFF;
   strcpy(rec, "poi");
 
-  mdiv = 10;
+  mdiv = 100;
   sublength = 0.01;
   i = 1; j = 0; 
   while( i < argc ) {

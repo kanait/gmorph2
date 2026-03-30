@@ -741,6 +741,9 @@ void HGfcOrderBoundaryEdges( HPpd *hppd, int ppdid )
       for ( lv = lp->splv; lv->nxt != (Splv *) NULL; lv = lv->nxt ) {
 
 	hged = hged_in_hgfc( lv->vt, lv->nxt->vt, hgfc );
+	GMORPH_ASSERT(hged != (HGed *) NULL);
+	GMORPH_ASSERT(hged->sv != (HGvt *) NULL);
+	GMORPH_ASSERT(hged->ev != (HGvt *) NULL);
 /* 	display("\thged %d sv %d ev %d\n", hged->no, hged->sv->no, hged->ev->no ); */
 	if ( !reverse ) {
 	  if ( hged->sv->vt != lv->vt ) {

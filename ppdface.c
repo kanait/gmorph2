@@ -206,17 +206,17 @@ Sphe *free_ppdhalfedge( Sphe *he, Spfc *face )
   Sphe *newhe;
 
   ed = he->ed;
-
-  if ( ed != NULL ) {
-    if ( ed->lf == face ) {
-      ed->lf = (Spfc *) NULL;
-      --(ed->fn);
-      he->ed = NULL;
-    } else if ( ed->rf == face ) {
-      ed->rf = (Spfc *) NULL;
-      --(ed->fn);
-      he->ed = NULL;
-    }
+  /* Safety:
+   * free_ppdhalfedge() may run after edge subdivision/freeing where he->ed
+   * can become a dangling pointer. During destruction we must not
+   * dereference ed->lf/ed->rf.
+   *
+   * Edge-side bookkeeping (ed->lf/ed->rf/ed->fn) is only for consistency
+   * during normal operation; it is not needed after objects start being
+   * freed.
+   */
+  if ( ed != (Sped *) NULL ) {
+    he->ed = NULL;
   }
   
   if ( he->nxt == he ) {

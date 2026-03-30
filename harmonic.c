@@ -5,6 +5,8 @@
 #include "gldef.h"
 #include "smd.h"
 
+#include <stdint.h>
+
 #define	KAPPA	1.0
 
 /*******************************************************************************
@@ -121,6 +123,11 @@ Semat *create_harmonic_emat( HGfc *hgfc )
     for ( ve = vt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) {
       
       ed = ve->ed;
+      /* Safety: ed/sv/ev can become invalid for some inputs.
+       * Skip edges that would cause zero-page dereference. */
+      if ( ed == (HGed *) NULL ) continue;
+      if ( ed->sv == (HGvt *) NULL || (uintptr_t)ed->sv < 0x10000 ) continue;
+      if ( ed->ev == (HGvt *) NULL || (uintptr_t)ed->ev < 0x10000 ) continue;
       /* sv */
       id = ed->sv->sid;
       if (vt->sid != id) {

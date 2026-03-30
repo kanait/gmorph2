@@ -111,16 +111,23 @@ void free_ppd(Sppd *ppd)
   if (ppd->qt != (QTree *) NULL) {
     free_ppdqtree(ppd);
   }
-  
-  /* edge */
-  for (edge = ppd->sped; edge != (Sped *) NULL; edge = nedge) {
-    nedge = edge->nxt;
-    free_ppdedge(edge, ppd);
-  }
+
+  /* IMPORTANT:
+   * free_ppdface() -> free_ppdhalfedge() touches he->ed and updates
+   * edge->lf/edge->rf/edge->fn. Therefore edges must stay alive while faces
+   * (halfedges) are being released.
+   *
+   * Free order: faces -> edges.
+   */
   /* face */
   for (face = ppd->spfc; face != (Spfc *) NULL; face = nface) {
     nface = face->nxt;
     free_ppdface(face, ppd);
+  }
+  /* edge */
+  for (edge = ppd->sped; edge != (Sped *) NULL; edge = nedge) {
+    nedge = edge->nxt;
+    free_ppdedge(edge, ppd);
   }
   /* loop */
   for (loop = ppd->splp; loop != (Splp *) NULL; loop = nloop) {

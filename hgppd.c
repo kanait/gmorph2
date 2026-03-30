@@ -5,6 +5,8 @@
 #include "gldef.h"
 #include "smd.h"
 
+#include <stdint.h>
+
 /******************************************************************
                        HGppd functions 
 ******************************************************************/
@@ -289,6 +291,10 @@ HGvted *create_hgvted(HGvt *hgvt, HGed *ed)
   HGvted *ve;
 
   if (ed == (HGed *) NULL) return (HGvted *) NULL;
+  if (hgvt == (HGvt *) NULL) return (HGvted *) NULL;
+  /* Defensive: some bad inputs can produce clearly invalid pointers
+   * (e.g. near the zero page). Avoid dereferencing such pointers. */
+  if ((uintptr_t)hgvt < 0x10000) return (HGvted *) NULL;
   
   ve = (HGvted *) malloc(sizeof(HGvted));
 
@@ -318,9 +324,12 @@ void insert_hgvted( HGvt *vt, HGed *ed )
   HGvt   *hg_another_vt( HGed *, HGvt * );
   double hg_calc_angle( HGvt *, HGvt *, HGvt * );
   
+  if (vt == (HGvt *)NULL) return;
+
   /* first */
   if (vt->shgve == (HGvted *) NULL) {
     ve = create_hgvted( vt, ed );
+    if (ve == (HGvted *) NULL) return;
     ve->angle = 0.0;
     return;
   }
@@ -336,6 +345,7 @@ void insert_hgvted( HGvt *vt, HGed *ed )
   /* last */
   if (ve == (HGvted *) NULL) {
     ve = create_hgvted( vt, ed );
+    if (ve == (HGvted *) NULL) return;
     ve->angle = angle;
     return;
   } 
@@ -389,6 +399,11 @@ double hg_calc_angle( HGvt *v1, HGvt *v2, HGvt *v3 )
   int    V2Signi(Vec2d *, Vec2d *);
   double  V2Length(Vec2d *);
   double  V2Dot(Vec2d *, Vec2d *);
+
+  /* Safety: v1/v2/v3 can become invalid for some inputs.
+   * Avoid dereferencing them when they are clearly non-sensical. */
+  if (v1 == (HGvt *)NULL || v2 == (HGvt *)NULL || v3 == (HGvt *)NULL) return 0.0;
+  if ((uintptr_t)v1 < 0x10000 || (uintptr_t)v2 < 0x10000 || (uintptr_t)v3 < 0x10000) return 0.0;
 
   sub1.x = v2->uvw.x - v1->uvw.x;
   sub1.y = v2->uvw.y - v1->uvw.y;
@@ -475,6 +490,9 @@ void HGedAppendLeftFace( HGed *ed, HGvt *vt, HGsf *sf )
 HGvted *find_hgvted( HGvt *vt, HGed *ed )
 {
   HGvted *vted;
+
+  if (vt == (HGvt *)NULL) return (HGvted *)NULL;
+  if ((uintptr_t)vt < 0x10000) return (HGvted *)NULL;
   
   for ( vted = vt->shgve; vted != (HGvted *) NULL; vted = vted->nxt ) {
     if ( vted->ed == ed ) return vted;
@@ -485,6 +503,9 @@ HGvted *find_hgvted( HGvt *vt, HGed *ed )
 HGed *HGvtedNextCCWEdge( HGvt *vt, HGed *ed )
 {
   HGvted *vted;
+
+  if (vt == (HGvt *)NULL) return (HGed *)NULL;
+  if ((uintptr_t)vt < 0x10000) return (HGed *)NULL;
   
   for ( vted = vt->shgve; vted != (HGvted *) NULL; vted = vted->nxt ) {
     
@@ -1186,6 +1207,7 @@ void HGsfTriangulation( HGsf *sf, HGfc *hgfc )
   void insert_hgvted( HGvt *, HGed * );
 
   n = sf->hen;
+  GMORPH_ASSERT(n >= 3);
 
   he = sf->shghe;
   i = 0;
@@ -1208,8 +1230,8 @@ void HGsfTriangulation( HGsf *sf, HGfc *hgfc )
 /* 	    ); */
 /*   } */
     
-  edarray = (HGed **) malloc( n * sizeof( HGed * ) );
-  vtarray = (HGvt **) malloc( n * sizeof( HGvt * ) );
+  edarray = (HGed **) XMALLOC( n * sizeof( HGed * ) );
+  vtarray = (HGvt **) XMALLOC( n * sizeof( HGvt * ) );
 
   for( i = 0, he = sf->shghe; i < n; ++i, he = he->nxt ) {
     vtarray[i] = he->vt;
@@ -1217,15 +1239,15 @@ void HGsfTriangulation( HGsf *sf, HGfc *hgfc )
   }
 
   /* create new surface */
-  sfarray = (HGsf **) malloc( (n - 2) * sizeof( HGsf * ) );
+  sfarray = (HGsf **) XMALLOC( (n - 2) * sizeof( HGsf * ) );
   for ( i = 0; i < n - 2; ++i ) {
     sfarray[i] = create_hgppdsurface( hgfc );
   }
-  newvtarray = (HGvt **) malloc( (n - 1) * sizeof( HGvt * ) );
+  newvtarray = (HGvt **) XMALLOC( (n - 1) * sizeof( HGvt * ) );
   for ( i = 0; i < n - 1; ++i ) {
     newvtarray[i] = vtarray[i+1];
   }
-  newedarray = (HGed **) malloc( (n - 1) * sizeof( HGed * ) );
+  newedarray = (HGed **) XMALLOC( (n - 1) * sizeof( HGed * ) );
   newedarray[0] = sf->shghe->ed;
   newedarray[ n - 2 ] = sf->shghe->prv->ed;
 
@@ -1313,6 +1335,7 @@ void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc )
   HGsf *create_hgppdsurface( HGfc * );
 
   n = sf->hen;
+  GMORPH_ASSERT(n >= 3);
 
   he = sf->shghe;
   i = 0;
@@ -1325,18 +1348,18 @@ void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc )
     he = he->nxt; ++i;
   }
     
-  vtarray = (HGvt **) malloc( n * sizeof( HGvt * ) );
+  vtarray = (HGvt **) XMALLOC( n * sizeof( HGvt * ) );
 
   for( i = 0, he = sf->shghe; i < n; ++i, he = he->nxt ) {
     vtarray[i] = he->vt;
   }
 
   /* create new surface */
-  sfarray = (HGsf **) malloc( (n - 2) * sizeof( HGsf * ) );
+  sfarray = (HGsf **) XMALLOC( (n - 2) * sizeof( HGsf * ) );
   for ( i = 0; i < n - 2; ++i ) {
     sfarray[i] = create_hgppdsurface( hgfc );
   }
-  newvtarray = (HGvt **) malloc( (n - 1) * sizeof( HGvt * ) );
+  newvtarray = (HGvt **) XMALLOC( (n - 1) * sizeof( HGvt * ) );
   for ( i = 0; i < n - 1; ++i ) {
     newvtarray[i] = vtarray[i+1];
   }

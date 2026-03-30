@@ -213,7 +213,13 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
   int   gppd_ok( char * );
   void  find_fileheader( char *, char * );
   void  drawwindow(int);
+  void  calc_fnorm(Spfc *);
+  void  ppdnorm(Sppd *);
   int   redraw;
+  Spvt *v;
+  Spfc *fc;
+  Sppd *ppd;
+  Vec  *mvec1;
 
   TextW = (Widget) XmFileSelectionBoxGetChild(w, XmDIALOG_TEXT);
   str = (char *) XmTextGetString(TextW);
@@ -226,7 +232,31 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
   else if (swin->filed == SMDFILEPPD2)
     ppd_ok(tstr, 1);
   else if (swin->filed == SMDFILEGPPD)
-    gppd_ok(tstr);
+    if ( gppd_ok(tstr) == SMD_ON ) {
+      /* Show only left window immediately. */
+      swin->screenatr[0].view_ppd = swin->morph_ppd;
+      swin->screenatr[1].view_ppd = (Sppd *) NULL;
+
+      ppd = swin->screenatr[0].view_ppd;
+      if ( ppd != (Sppd *) NULL ) {
+	/* Mimic gmorphcb() initial state (a = 0 -> p=1, q=0). */
+	mvec1 = ppd->mvec1;
+	for ( v = ppd->spvt; v != (Spvt *) NULL; v = v->nxt ) {
+	  v->vec.x = mvec1[v->no].x;
+	  v->vec.y = mvec1[v->no].y;
+	  v->vec.z = mvec1[v->no].z;
+	}
+	/* update face normals */
+	for ( fc = ppd->spfc; fc != (Spfc *) NULL; fc = fc->nxt ) {
+	  calc_fnorm(fc);
+	}
+	if ( swin->smooth_shading ) {
+	  ppdnorm(ppd);
+	}
+      }
+    } else {
+      redraw = 0;
+    }
   else if (swin->filed == SMDFILEGMH) {
     if (gmh_ok(tstr) != SUCCEED)
       redraw = 0;
