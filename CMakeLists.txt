@@ -10,57 +10,57 @@ set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O -g3 -funroll-loops -ansi -pedantic -ffast-math -D_DEFAULT_SOURCE -DSHM")
 
 # インクルードディレクトリを設定
-include_directories(/usr/include/X11)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src /usr/include/X11)
 
-# ソースファイルのリスト
+# ソースファイルのリスト（src/ 配下）
 set(SOURCES
-    main.c
-    smd.c
-    window.c
-    gldraw.c
-    draw.c
-    busy.c
-    pick.c
-    edit.c
-    sellist.c
-    file.c
-    screen.c
-    ppd.c
-    ppdsolid.c
-    ppdpart.c
-    ppdface.c
-    ppdloop.c
-    ppdvertex.c
-    ppdnormal.c
-    ppdedge.c
-    ppdlist.c
-    oppd.c
-    prique.c
-    sgprique.c
-    quadtree.c
-    loop.c
-    gmorph.c
-    grouping.c
-    harmonic.c
-    correspond.c
-    morphvec.c
-    paths.c
-    sgraph.c
-    sgpaths.c
-    hppd.c
-    hppdlod.c
-    hgppd.c
-    hged.c
-    glppd.c
-    ps.c
-    image.c
-    sgiimage.c
-    linbcg.c
-    trisquare.c
-    matlib.c
-    veclib.c
-    Progress.c
-    time.c
+    src/main.c
+    src/smd.c
+    src/window.c
+    src/gldraw.c
+    src/draw.c
+    src/busy.c
+    src/pick.c
+    src/edit.c
+    src/sellist.c
+    src/file.c
+    src/screen.c
+    src/ppd.c
+    src/ppdsolid.c
+    src/ppdpart.c
+    src/ppdface.c
+    src/ppdloop.c
+    src/ppdvertex.c
+    src/ppdnormal.c
+    src/ppdedge.c
+    src/ppdlist.c
+    src/oppd.c
+    src/prique.c
+    src/sgprique.c
+    src/quadtree.c
+    src/loop.c
+    src/gmorph.c
+    src/grouping.c
+    src/harmonic.c
+    src/correspond.c
+    src/morphvec.c
+    src/paths.c
+    src/sgraph.c
+    src/sgpaths.c
+    src/hppd.c
+    src/hppdlod.c
+    src/hgppd.c
+    src/hged.c
+    src/glppd.c
+    src/ps.c
+    src/image.c
+    src/sgiimage.c
+    src/linbcg.c
+    src/trisquare.c
+    src/matlib.c
+    src/veclib.c
+    src/Progress.c
+    src/time.c
 )
 
 # 実行ファイルを作成
@@ -130,6 +130,7 @@ target_link_libraries(gmorph2b8
 target_include_directories(gmorph2b8 PRIVATE
     ${X11_INCLUDE_DIRS}
     ${XPM_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Motifライブラリが利用可能な場合のみインクルードディレクトリを追加
