@@ -8,32 +8,22 @@ Takashi Kanai, Hiromasa Suzuki, Fumihiko Kimura:
 IEEE Computer Graphics and Applications, Vol. 20, No. 2, pp. 62–75, March/April 2000.
 
 This code is provided **for research purposes only and without any support**.
-I no longer remember the details, as I originally created it around 1997.
+Originally, it was developed as code that runs on SGI workstations around 1997-1998.
+This code was created earlier than the [Windows version](https://github.com/kanait/gmorph); the Windows version was later developed based on this code.
+Recently, I updated the code to compile and run on Ubuntu 24.04, and fixed a few minor bugs that had been present since then.
 
-I have successfully compiled this code on Fedora 24 Linux and, more recently, on Ubuntu 24.04.
-To compile the code, you need to install the following libraries:
+## Compilation
 
-For **Fedora** (via `dnf`):
-- motif-devel
-- mesa-libGL-devel
-- mesa-libGLU-devel
-- mesa-libGLw-devel
-- libXpm-devel
+To compile the code, you need to install the following libraries (via `apt`):
 
-For **Ubuntu** (via `apt`):
 - libmotif-dev
 - libgl1-mesa-dev
 - libglu1-mesa-dev
 - libglw1-mesa-dev
 - libxpm-dev
+You may also need additional libraries required by the packages above (for example: `libx11-dev`, `libxext-dev`, `libxt-dev`, `libxi-dev`, `libsm-dev`, `libice-dev`).
 
-After installing these libraries, simply run:
-
-```bash
-make
-```
-
-to create the executable file **gmorph2b8**, or use CMake:
+To create the executable file **gmorph2b8**, use CMake:
 
 ```bash
 mkdir build
@@ -42,4 +32,47 @@ cmake ..
 make
 ```
 
-Takashi Kanai
+## Usage
+
+The executable `gmorph2b8` can be run in both command-line mode and GUI mode.
+So far, this program has been confirmed to generate morphing PPDs for the following GMH files.
+
+- bunny-tiger/bunny-tiger#1_SP001.gmh 
+- bunny-tiger/bunny-tiger_SP001.gmh
+- Delorean-Porsche/Delorean-Porsche_SP.gmh
+- star-pai/spf1_6nSP0002.gmh
+- torus-bottle/torus-bottle_SP008.gmh
+
+To generate a morphing PPD from the command line, go to the folder that contains the GMH file and run:
+
+```bash
+../../build/gmorph2b8 in.gmh out.ppd
+```
+
+Basic CLI syntax:
+`gmorph2b8 [options] <in.gmh> <out.ppd>`
+
+This will generate the PPD file.
+To start the GUI, use the following command. Note that the GUI requires an X11/GLX environment (an active X server).
+
+```bash
+../../build/gmorph2b8 -gui
+```
+
+This will start the GUI.
+
+### Command-line options (selected)
+* `-div <n>`: morphing division number (default: 100; also affects the animation smoothness in GUI mode).
+* `-smooth`: enable smooth shading.
+* `-enh_disp`: enable enhanced display mode.
+* `-rec <name>`: record morphing PPDs to files like `<name>_1.ppd`, `<name>_2.ppd`, ...
+* `-mphtosgi`: save morphing results to SGI image files.
+* `-spath <sublength> <out.gmh>`: make shortest-path mode graph (CLI-only).
+
+## Authors
+
+* **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** - The University of Tokyo
+
+## License
+
+This software is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
