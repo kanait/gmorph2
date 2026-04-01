@@ -1301,11 +1301,61 @@ void HGsfTriangulation( HGsf *sf, HGfc *hgfc )
     
 }  
 
-void HGfcTriangulation_noEdge( HGfc *hgfc )
+static double hgvt_cross2d( HGvt *a, HGvt *b, HGvt *c )
+{
+  return (b->uvw.x - a->uvw.x) * (c->uvw.y - a->uvw.y) -
+    (b->uvw.y - a->uvw.y) * (c->uvw.x - a->uvw.x);
+}
+
+static int hgfc_polygon_orientation( HGvt **vtarray, int n )
+{
+  int i;
+  double area;
+
+  area = 0.0;
+  for ( i = 0; i < n; ++i ) {
+    HGvt *a, *b;
+
+    a = vtarray[i];
+    b = vtarray[(i + 1) % n];
+    area += a->uvw.x * b->uvw.y - b->uvw.x * a->uvw.y;
+  }
+
+  if ( area >= 0.0 ) return 1;
+  else               return -1;
+}
+
+static void hgfc_emit_triangle( HGfc *hgfc, HGvt *v0, HGvt *v1, HGvt *v2 )
+{
+  HGsf *nsf;
+  HGhe *he0, *he1, *he2;
+  HGhe *create_hgppdhalfedge( HGsf * );
+  HGsf *create_hgppdsurface( HGfc * );
+
+  nsf = create_hgppdsurface( hgfc );
+  he0 = create_hgppdhalfedge( nsf );
+  he0->vt = v0;
+  he1 = create_hgppdhalfedge( nsf );
+  he1->vt = v1;
+  he2 = create_hgppdhalfedge( nsf );
+  he2->vt = v2;
+}
+
+static Boolean hgfc_triangle_matches_orientation( HGvt *a, HGvt *b, HGvt *c, int orientation )
+{
+  double cross;
+  const double eps = 1.0e-10;
+
+  cross = hgvt_cross2d( a, b, c );
+  if ( orientation > 0 ) return ( cross > eps ) ? True : False;
+  else                   return ( cross < -eps ) ? True : False;
+}
+
+void HGfcTriangulation_noEdge( HGfc *hgfc, Sppd *gppd )
 {
   int i, n;
   HGsf *sf, *nsf;
-  void HGsfTriangulation_noEdge( HGsf *, HGfc * );
+  void HGsfTriangulation_noEdge( HGsf *, HGfc *, Sppd * );
   void free_hgppdsurface( HGsf *, HGfc * );
   
   i = 0;
@@ -1319,20 +1369,18 @@ void HGfcTriangulation_noEdge( HGfc *hgfc )
       continue;
     }
     nsf = sf->nxt;
-    HGsfTriangulation_noEdge( sf, hgfc );
+    HGsfTriangulation_noEdge( sf, hgfc, gppd );
     free_hgppdsurface( sf, hgfc );
     sf = nsf; ++i;
   }
 }
 
-void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc )
+void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc, Sppd *gppd )
 {
-  int i, n, j;
-  HGvt **vtarray, **newvtarray;
-  HGsf **sfarray;
-  HGhe *he, *he0, *he1, *he2;
-  HGhe *create_hgppdhalfedge( HGsf * );
-  HGsf *create_hgppdsurface( HGfc * );
+  int i, j, n, orientation;
+  int root;
+  HGvt **vtarray;
+  HGhe *he;
 
   n = sf->hen;
   GMORPH_ASSERT(n >= 3);
@@ -1354,28 +1402,77 @@ void HGsfTriangulation_noEdge( HGsf *sf, HGfc *hgfc )
     vtarray[i] = he->vt;
   }
 
-  /* create new surface */
-  sfarray = (HGsf **) XMALLOC( (n - 2) * sizeof( HGsf * ) );
-  for ( i = 0; i < n - 2; ++i ) {
-    sfarray[i] = create_hgppdsurface( hgfc );
-  }
-  newvtarray = (HGvt **) XMALLOC( (n - 1) * sizeof( HGvt * ) );
-  for ( i = 0; i < n - 1; ++i ) {
-    newvtarray[i] = vtarray[i+1];
-  }
-  for ( i = 0; i < n - 2; ++i ) {
+  /* Some merged loops can revisit the same vertex. Drop duplicates before
+   * triangulation so we do not emit repeated triangles from a degenerate fan.
+   */
+  i = 0;
+  while ( i < n ) {
+    Boolean remove_vertex;
 
-    he0 = create_hgppdhalfedge( sfarray[i] );
-    he0->vt = vtarray[0];
-    he1 = create_hgppdhalfedge( sfarray[i] );
-    he1->vt = newvtarray[i];
-    he2 = create_hgppdhalfedge( sfarray[i] );
-    he2->vt = newvtarray[i+1];
-    
+    remove_vertex = False;
+    if ( vtarray[i] == vtarray[(i + 1) % n] ) {
+      remove_vertex = True;
+    } else {
+      for ( j = 0; j < i; ++j ) {
+        if ( vtarray[j] == vtarray[i] ) {
+          remove_vertex = True;
+          break;
+        }
+      }
+    }
+
+    if ( remove_vertex == True ) {
+      for ( j = i; j < n - 1; ++j ) {
+        vtarray[j] = vtarray[j + 1];
+      }
+      --n;
+      if ( n <= TRIANGLE ) break;
+      continue;
+    }
+    ++i;
   }
-  
-  free(vtarray); free(newvtarray);
-  free(sfarray);
+
+  if ( n == TRIANGLE ) {
+    hgfc_emit_triangle( hgfc, vtarray[0], vtarray[1], vtarray[2] );
+    free(vtarray);
+    return;
+  }
+
+  orientation = hgfc_polygon_orientation( vtarray, n );
+  if ( n == 4 ) {
+    Boolean ok02, ok13;
+
+    ok02 = hgfc_triangle_matches_orientation( vtarray[0], vtarray[1], vtarray[2], orientation ) &&
+      hgfc_triangle_matches_orientation( vtarray[0], vtarray[2], vtarray[3], orientation );
+    ok13 = hgfc_triangle_matches_orientation( vtarray[0], vtarray[1], vtarray[3], orientation ) &&
+      hgfc_triangle_matches_orientation( vtarray[1], vtarray[2], vtarray[3], orientation );
+
+    if ( ok13 == True && ok02 == False ) {
+      hgfc_emit_triangle( hgfc, vtarray[0], vtarray[1], vtarray[3] );
+      hgfc_emit_triangle( hgfc, vtarray[1], vtarray[2], vtarray[3] );
+    } else {
+      hgfc_emit_triangle( hgfc, vtarray[0], vtarray[1], vtarray[2] );
+      hgfc_emit_triangle( hgfc, vtarray[0], vtarray[2], vtarray[3] );
+    }
+    free(vtarray);
+    return;
+  }
+
+  root = 0;
+  for ( i = 0; i < n; ++i ) {
+    if ( vtarray[i]->sp_type != SP_VERTEX_BOUNDARY ) {
+      root = i;
+      break;
+    }
+  }
+
+  for ( i = 0; i < n - 2; ++i ) {
+    hgfc_emit_triangle( hgfc,
+			vtarray[root],
+			vtarray[(root + i + 1) % n],
+			vtarray[(root + i + 2) % n] );
+  }
+  free(vtarray);
 
 }  
 

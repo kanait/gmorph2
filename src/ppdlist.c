@@ -27,7 +27,6 @@ void write_ppd_file( char *fname, Sppd *ppd )
   int  facenum, loopnum, fnodenum;
   int  bfc, efc, bpt, ept, bvt, evt, bnm, enm;
   Id   vtx[128], nrm[128];
-
   if ((fp = fopen(fname, "w")) == NULL) {
     return;
   }

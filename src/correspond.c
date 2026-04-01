@@ -676,8 +676,7 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
   void  hgfc_harmonicmap_to_ps( char *, HGfc * );
   void  tmp_hgfc_harmonicmap_to_ps( char *, HGfc *, HGfc *, HGfc * );
   void  printhgfc( HGfc *, int );
-  void  HGfcTriangulation_noEdge( HGfc * );
-  
+  void  HGfcTriangulation_noEdge( HGfc *, Sppd * );
   for ( hfc = hppd->shfc; hfc != (HFace *) NULL; hfc = hfc->nxt ) {
 
 /*     display("hfc %d\n", hfc->no); */
@@ -704,8 +703,12 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
     
     /* ?????? hgfc ????? */
     hgfc_to_mhgfc( hgfc1, hgfc2, mhgfc );
-    
-    HGfcTriangulation_noEdge( mhgfc );
+  }
+
+  for ( hfc = hppd->shfc; hfc != (HFace *) NULL; hfc = hfc->nxt ) {
+    mhgfc = hfc->mhgfc;
+
+    HGfcTriangulation_noEdge( mhgfc, gppd );
 
     if ( swin->savehmtops ) {
       sprintf( str, "mhgfchrm%d.ps", hfc->no );
@@ -777,12 +780,12 @@ void makehgvtedlink( HGfc *hgfc )
 void HGfcMakeHGsfFromHGvt( HGvt *vt, HGfc *hgfc )
 {
   HGvted *hgve;
-  Boolean HGsfCreateCheck( HGvt *, HGed * );
+  Boolean HGsfCreateCheck( HGvt *, HGed *, HGfc * );
   void    HGsfCreate( HGvt *, HGed *, HGfc * );
 
   for ( hgve = vt->shgve; hgve != (HGvted *) NULL; hgve = hgve->nxt ) {
 
-    if ( True == HGsfCreateCheck( vt, hgve->ed ) ) {
+    if ( True == HGsfCreateCheck( vt, hgve->ed, hgfc ) ) {
 
       (void) HGsfCreate( vt, hgve->ed, hgfc );
 
@@ -792,7 +795,61 @@ void HGfcMakeHGsfFromHGvt( HGvt *vt, HGfc *hgfc )
 
 }
 
-Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge )
+static Boolean hgfc_has_corner( HGfc *hgfc, HGvt *vt, HGed *in_ed, HGed *out_ed )
+{
+  HGsf *sf;
+
+  if ( hgfc == (HGfc *) NULL || vt == (HGvt *) NULL ||
+       in_ed == (HGed *) NULL || out_ed == (HGed *) NULL ) {
+    return False;
+  }
+
+  for ( sf = hgfc->shgsf; sf != (HGsf *) NULL; sf = sf->nxt ) {
+    HGhe *he;
+
+    he = sf->shghe;
+    if ( he == (HGhe *) NULL ) continue;
+    do {
+      if ( he->vt == vt && he->ed == out_ed && he->prv->ed == in_ed ) {
+        return True;
+      }
+    } while ( (he = he->nxt) != sf->shghe );
+  }
+
+  return False;
+}
+
+static int hgfc_edge_face_count( HGfc *hgfc, HGvt *sv, HGvt *ev )
+{
+  HGsf *sf;
+  int count;
+
+  if ( hgfc == (HGfc *) NULL || sv == (HGvt *) NULL || ev == (HGvt *) NULL ) {
+    return 0;
+  }
+
+  count = 0;
+  for ( sf = hgfc->shgsf; sf != (HGsf *) NULL; sf = sf->nxt ) {
+    HGhe *he;
+
+    he = sf->shghe;
+    if ( he == (HGhe *) NULL ) continue;
+    do {
+      HGvt *a, *b;
+
+      a = he->vt;
+      b = he->nxt->vt;
+      if ( ((a == sv) && (b == ev)) || ((a == ev) && (b == sv)) ) {
+        ++count;
+        break;
+      }
+    } while ( (he = he->nxt) != sf->shghe );
+  }
+
+  return count;
+}
+
+Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge, HGfc *hgfc )
 {
   HGvt *vt, *nvt;
   HGed *ed, *ned;
@@ -800,6 +857,8 @@ Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge )
   HGsf *HGedLeftFace( HGed *, HGvt * );
   HGvt *HGedAnotherVertex( HGed *, HGvt * );
   HGed *HGvtedNextCCWEdge( HGvt *, HGed * );
+  Boolean hgfc_has_corner( HGfc *, HGvt *, HGed *, HGed * );
+  int hgfc_edge_face_count( HGfc *, HGvt *, HGvt * );
   
   vt = start_vertex;
   ed = start_edge;
@@ -809,6 +868,10 @@ Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge )
 
 /*     display("vt %d ed %d ( sv %d ev %d )\n", vt->no, ed->no, */
 /* 	    ed->sv->no, ed->ev->no ); */
+
+    if ( ed->lf != (HGsf *) NULL && ed->rf != (HGsf *) NULL ) {
+      return False;
+    }
     
     if ( ( ed->sp_type == SP_EDGE_BOUNDARY ) && ( ed->ev == vt ) ) {
       /* boundary rotation */
@@ -824,11 +887,18 @@ Boolean HGsfCreateCheck( HGvt *start_vertex, HGed *start_edge )
     nvt = HGedAnotherVertex( ed, vt );
     ned = HGvtedNextCCWEdge( nvt, ed );
 
+    if ( hgfc_edge_face_count( hgfc, vt, nvt ) >= 2 ) {
+      return False;
+    }
     if ( nvt == start_vertex ) {
       return True;
     }
+    if ( ned == start_edge ) {
+      return False;
+    }
     if ( nvt == (HGvt *)NULL ) return False;
     if ( ned == (HGed *)NULL ) return False;
+    if ( hgfc_has_corner( hgfc, nvt, ed, ned ) == True ) return False;
     vt = nvt;
     ed = ned;
   }
@@ -849,7 +919,7 @@ void HGsfCreate( HGvt *start_vertex, HGed *start_edge, HGfc *hgfc )
 
   sf = create_hgppdsurface( hgfc );
 /*   display("sf %d\n", sf->no); */
-  
+
   vt = start_vertex;
   ed = start_edge;
 
@@ -865,6 +935,9 @@ void HGsfCreate( HGvt *start_vertex, HGed *start_edge, HGfc *hgfc )
     ned = HGvtedNextCCWEdge( nvt, ed );
 
     if ( nvt == start_vertex ) {
+      return;
+    }
+    if ( ned == start_edge ) {
       return;
     }
     vt = nvt;
@@ -1332,6 +1405,50 @@ static void mhgfc_relink_cross_mesh_mates( HGfc *hgfc1 )
   }
 }
 
+static void mhgfc_merge_duplicate_spvt_edges( HGfc *mhgfc )
+{
+  HGed *ed, *ded, *next_dup;
+  void free_hgppdedge( HGed *, HGfc * );
+
+  for ( ed = mhgfc->shged; ed != (HGed *) NULL; ed = ed->nxt ) {
+    Spvt *ed_sv, *ed_ev;
+
+    if ( ed->sv == (HGvt *) NULL || ed->ev == (HGvt *) NULL ) continue;
+    ed_sv = ed->sv->vt;
+    ed_ev = ed->ev->vt;
+    if ( ed_sv == (Spvt *) NULL || ed_ev == (Spvt *) NULL ) continue;
+
+    for ( ded = ed->nxt; ded != (HGed *) NULL; ded = next_dup ) {
+      HGvt *vt;
+      HGvted *ve;
+      Spvt *dd_sv, *dd_ev;
+
+      next_dup = ded->nxt;
+      if ( ded->sv == (HGvt *) NULL || ded->ev == (HGvt *) NULL ) continue;
+      dd_sv = ded->sv->vt;
+      dd_ev = ded->ev->vt;
+      if ( dd_sv == (Spvt *) NULL || dd_ev == (Spvt *) NULL ) continue;
+
+      if ( !(((ed_sv == dd_sv) && (ed_ev == dd_ev)) ||
+	     ((ed_sv == dd_ev) && (ed_ev == dd_sv))) ) {
+        continue;
+      }
+
+      for ( vt = mhgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+        for ( ve = vt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) {
+          if ( ve->ed == ded ) {
+            ve->ed = ed;
+          }
+        }
+        if ( vt->startedge == ded ) vt->startedge = ed;
+        if ( vt->endedge == ded ) vt->endedge = ed;
+      }
+
+      free_hgppdedge( ded, mhgfc );
+    }
+  }
+}
+
 void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 {
   HGvt *hgvt;
@@ -1380,6 +1497,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   /* re-order hgvted */
   /* ?????????????? */
   HVertexCreateHGvted( mhgfc );
+  mhgfc_merge_duplicate_spvt_edges( mhgfc );
 /*   display("ff\n"); */
 }
 
@@ -1906,7 +2024,6 @@ void mhgfc_to_gppd ( HGfc *mhgfc, Sppd *gppd )
   }
 
   for ( hgsf = mhgfc->shgsf; hgsf != (HGsf *) NULL; hgsf = hgsf->nxt ) {
-
     mfc = create_ppdface( gppd );
     mfc->bpso = gppd->spso;
     mfc->bppt = gppd->sppt;
