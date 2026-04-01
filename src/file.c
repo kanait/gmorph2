@@ -262,7 +262,7 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
       redraw = 0;
   }
 
-  /* ダイアログを閉じても GLw に Expose が来ないことがあり、読み込み直後に描画されない */
+  /* Closing the dialog may not trigger a GLw Expose, so redraw immediately. */
   if (redraw) {
     drawwindow(SCREEN1);
     drawwindow(SCREEN2);

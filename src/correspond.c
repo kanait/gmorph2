@@ -147,7 +147,7 @@ HGed *hged_in_hgfc( Spvt *sv, Spvt *ev, HGfc *hgfc )
 
   if ( hgfc == (HGfc *) NULL ) return (HGed *) NULL;
   for ( hged = hgfc->shged; hged != (HGed *) NULL; hged = hged->nxt ) {
-    /* ??????????????????????????? */
+    /* Skip incomplete edges before comparing endpoint vertices. */
     if ( hged->sv == (HGvt *) NULL || hged->ev == (HGvt *) NULL )
       continue;
     if ( (hged->sv->vt == sv) && (hged->ev->vt == ev) ) 
@@ -358,8 +358,7 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
       
     free(prm1); free(prm2);
 
-    /* hged->sp_type == SP_EDGE_BOUNDARY ?????? */
-    /* ???????????????????????????? */
+    /* Boundary edge orientation adjustments are handled by the logic below. */
     
 /*     for ( lv = lp1->splv; lv->nxt != (Splv *) NULL; lv = lv->nxt ) { */
 /*       if ( lhgfc1 != NULL ) { */
@@ -400,9 +399,7 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
 /*       } */
 /*     } */
     
-    /* hgvt1 ?? hged2 ???????? inc_ed ?????? */
-    /* hgvt2 ?? hged1 ???????? inc_ed ?????? */
-    /* ?????????????????????????????????? */
+    /* Connect each face's vertices to incident edges contributed by the other face. */
 
     if ( hed->rf != (HFace *) NULL ) {
 /*       display("lp1->lp2.\n"); */
@@ -475,10 +472,10 @@ void hedge_to_gppd( HPpd *hppd, Sppd *gppd )
     
   }
   
-  /* ????? 3D vector ???????????? Hedvt ??????????? */
+  /* Build Hedvt links ordered by the 2D harmonic-map coordinates. */
 }
 
-/* hgvt1 ?? hged2 ???????? inc_ed ?????? */
+/* Attach hgvt vertices to incident edges coming from the paired face. */
 void HGvtIncludeHGed( HEdge *hed, Splp *lp1, Splp *lp2,
 		      HGfc *hgfc1, HGfc *hgfc2, int from )
 {
@@ -701,7 +698,7 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
 /*     printhgfc( hgfc1, SRC ); */
 /*     printhgfc( hgfc2, TARGET ); */
     
-    /* ?????? hgfc ????? */
+    /* Merge the two harmonic-map faces into the mhgfc. */
     hgfc_to_mhgfc( hgfc1, hgfc2, mhgfc );
   }
 
@@ -717,7 +714,7 @@ void hface_to_gppd( HPpd *hppd, Sppd *gppd )
     }
 
     
-    /* mhgfc ?????????????????? gppd ???????????? */
+    /* Convert the merged harmonic-map face into the output gppd. */
     mhgfc_to_gppd( mhgfc, gppd );
     
   }
@@ -737,7 +734,7 @@ void hgppdface_to_hgppdsurface( HGfc *hgfc )
   void printhgfc( HGfc *, int );
 
 /*   display("hgfc %d\n", hgfc->id ); */
-  /* ?????????????? */
+  /* Build vertex-to-edge links before tracing faces. */
   makehgvtedlink( hgfc );
 
   for ( hgvt = hgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) {
@@ -958,11 +955,11 @@ void hgfc_to_mhgfc( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   void mhgfc_create_mhgsf( HGfc * );
   void CalcHGsfNorm( HGfc * );
   
-  /* hgvt ????????? mhgfc ????? */
+  /* Copy hgvt vertices from both inputs into the merged face. */
   hgvt_to_mhgvt( hgfc1, mhgfc, SRC );
   hgvt_to_mhgvt( hgfc2, mhgfc, TARGET );
 
-  /* ????????????? */
+  /* Build merged edges, including intersection vertices. */
   hged_to_mhged( hgfc1, hgfc2, mhgfc );
 
 /*   for ( hgvt = mhgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) { */
@@ -974,7 +971,7 @@ void hgfc_to_mhgfc( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 /*       display("\ted %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
 /*     } */
 /*   } */
-  /* mhged ??????????????mhgsf ?????? */
+  /* Trace mhgsf faces from the merged edge graph. */
   mhgfc_create_mhgsf( mhgfc );
 
 /*   CalcHGsfNorm( mhgfc ); */
@@ -1013,8 +1010,7 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   void mhgfc_create_mhged( HGfc *, HGfc *, HGfc * );
   void  tmp_hgfc_harmonicmap_to_ps( char *, HGfc *, HGfc *, HGfc * );
   
-  /** ????????????????????????????????????????? **/
-  /* ??????????????????????mhgfc ????????????????? */
+  /* Add edge-edge intersection data into the merged face graph. */
 /*   display("edge_edge_intersection\n"); */
   hgfc_edge_edge_intersection( hgfc1, hgfc2, mhgfc );
 /*   display("ee end.\n"); */
@@ -1024,7 +1020,7 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 /*     tmp_hgfc_harmonicmap_to_ps( str, hgfc1, hgfc2, mhgfc ); */
 /*     hgfc_harmonicmap_to_ps( str, mhgfc ); */
 /*   } */
-  /* hged ????????????????????mhgfc ??????????????? */
+  /* Convert source-face edges into mhgfc edges. */
 /*   display("create_mhged\n"); */
   mhgfc_create_mhged( hgfc1, hgfc2, mhgfc );
 /*   display("cm end.\n"); */
@@ -1037,14 +1033,12 @@ void hged_to_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   "Shape Transformation for Polyhedral Objects", in SIGGRAPH'92
   - 5.2 The Merging Algorithm -
 */
-/* 
-  isLineSegmentCrossing ???????????????
+/*
+  HGvt-based version of the line-segment crossing test.
 */
 
 /*
-  (sv->sp_type == SP_VERTEX_BOUNDARY) || (ev->sp_type != SP_VERTEX_BOUNDARY)  
-  ??????????????????????
-  -> ??????????
+  Reject invalid candidate combinations involving boundary-driven cases.
 */
 
 void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
@@ -1174,7 +1168,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 	  }
 	} while ( (he = he->nxt) != f2->shghe );
 
-	/* ??????????????????????? */
+	/* Test the collected candidate edges for intersections. */
 	while ( edgelist2->en ) {
 
 	  e2 = edgelist2->senode->ed;
@@ -1193,7 +1187,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 	    /* create hgppdvertex */
 	    mhgvt = create_hgppdvertex( mhgfc );
 /* 	    display("mhgvt %d\n", mhgvt->no ); */
-	    /* ?????????????? */
+	    /* Create a merged vertex at the intersection point. */
 /* 	    mhgvt->vt = mvt; */
 	    mhgvt->sp_type = SP_VERTEX_NORMAL;
 	    mhgvt->from = FROM_INTSEC;
@@ -1202,7 +1196,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 				   &(mhgvt->uvw) );
 
 	    /* insert hgedvt in e1, e2 */
-	    /* hged2 ???????hged1 ?? rv ?? lv ??????????? */
+	    /* Copy e2's right/left face relation onto the e1-side event. */
 	    /* create vertex->edge in counter-clockwise */
 	    hgedvt1 = create_hgedvt( mhgvt, e1 );
 	    hgedvt1->intsec_ed = e2;
@@ -1283,7 +1277,7 @@ void hgfc_edge_edge_intersection( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 
   }
   
-  /* ????? 3D vector ???????????? HGedvt ??????????? */
+  /* Build HGedvt links ordered by the 2D harmonic-map coordinates. */
 }
 
 Boolean isEdgeValidforCandidate( HGed *e1, HGed *e2 )
@@ -1347,7 +1341,7 @@ HGsf *find_hgsf_in_hgfc( HGvt *hgvt, HGfc *hgfc )
 /*   } */
   if ( hgvt->sp_type == SP_VERTEX_NORMAL ) {
 
-    /* Kent ?????????? */
+    /* Kent's shortcut: reuse the cached incident face when available. */
     if ( hgvt->inc_sf != (HGsf *) NULL ) return hgvt->inc_sf;
     
     for ( sf = hgfc->shgsf; sf != (HGsf *) NULL; sf = sf->nxt ) {
@@ -1361,8 +1355,7 @@ HGsf *find_hgsf_in_hgfc( HGvt *hgvt, HGfc *hgfc )
   } else if ( hgvt->sp_type == SP_VERTEX_BOUNDARY ) {
 
     /* use boundary information */
-    /* ?????????????????????????????? */
-    /* hedge_to_gppd ???????????????????????????????? */
+    /* Boundary vertices can use the incident boundary edge recorded earlier in hedge_to_gppd. */
     
     hged = hgvt->inc_ed;
 /*     display("\tinc ed found. %d\n", hged->no ); */
@@ -1462,7 +1455,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
   /* sort H2's intersection points */
   /* H1's points have already sorted. */
   /* decide hgvt1's inc_sf ( used in "hface_calc_morph_vector"(morphvec.c) ) */
-  /* ?????????????????? */
+  /* Rebuild cross-mesh links after sorting the second face's edge events. */
 
 /*   display("aa\n"); */
   
@@ -1495,7 +1488,7 @@ void mhgfc_create_mhged( HGfc *hgfc1, HGfc *hgfc2, HGfc *mhgfc )
 
 /*   display("ee\n"); */
   /* re-order hgvted */
-  /* ?????????????? */
+  /* Restore a consistent cyclic order around each merged vertex. */
   HVertexCreateHGvted( mhgfc );
   mhgfc_merge_duplicate_spvt_edges( mhgfc );
 /*   display("ff\n"); */
@@ -1606,7 +1599,7 @@ void HGedvtSort( HGed *hged )
   } /*  while ( hged->hgevn ) */
 
   /* decide order */
-  /* ????????????????? */
+  /* Decide the traversal order of the sorted intersection events. */
   reverse = HGedvtDecideOrder( hged->sv, hged->ev, sf, ef );
   
 /*   if ( (hged->sv->no == 57) ||  (hged->ev->no == 57) ) { */
@@ -1693,7 +1686,7 @@ Boolean HGedvtDecideOrder( HGvt *sv, HGvt *ev, HGsf *sf, HGsf *ef )
     if ( fc == sf ) return True;
   }
     
-  /* ??????????????????????????? */
+  /* Fallback: the boundary-side consistency test failed. */
 /*   display("okasii! in HGedvtDecideOrder.\n"); */
   return False;
 }    
@@ -1797,7 +1790,7 @@ void HGfcCreateHGvted( HGfc *hgfc, HGfc *mhgfc )
 
   for ( hgvt = hgfc->shgvt; hgvt != (HGvt *) NULL; hgvt = hgvt->nxt ) {
 
-    /* ???????????????????????????? */
+    /* Look up the merged vertex corresponding to this source vertex. */
     mhgvt = hgvt->mhgvt;
     
 /*     display("hgvt %d type %d\n", hgvt->no, hgvt->sp_type ); */
@@ -1931,7 +1924,7 @@ void HVertexCreateHGvted( HGfc *hgfc )
 
 /*       for ( ve = hgvt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) { */
 
-/* 	display("\t(????) ed %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
+/* 	display("\t(sorted) ed %d type %d\n", ve->ed->no, ve->ed->sp_type ); */
 /*       } */
       
       for ( i = 0; i < n - 2; ++i ) {
@@ -1997,7 +1990,7 @@ void mhgfc_create_mhgsf( HGfc *hgfc )
 
 /************************************************************************ */
 
-/* vt->mvt ???????????????? ? */
+/* Convert merged-face vertices and faces into the output gppd. */
 void mhgfc_to_gppd ( HGfc *mhgfc, Sppd *gppd )
 {
   HGvt *hgvt;

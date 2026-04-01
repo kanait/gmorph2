@@ -21,7 +21,7 @@
 
 Widget progress = NULL;
 
-/* レガシー glXChooseVisual（フォールバック） */
+/* Legacy glXChooseVisual fallback. */
 static void choose_gl_visual_legacy(Display *dpy, int screen, ScreenAtr *sa)
 {
   static int a0[] = {
@@ -62,8 +62,9 @@ static void choose_gl_visual_legacy(Display *dpy, int screen, ScreenAtr *sa)
 }
 
 /*
- * NVIDIA 等では glXChooseVisual + glXCreateContext が X_GLXCreateContext で
- * BadValue になることがある。GLX 1.3 の FBConfig + glXCreateNewContext を優先する。
+ * On some drivers such as NVIDIA, glXChooseVisual + glXCreateContext can fail
+ * with X_GLXCreateContext / BadValue. Prefer GLX 1.3 FBConfig +
+ * glXCreateNewContext when available.
  */
 static void setup_gl_for_screen(Display *dpy, int screen, ScreenAtr *sa)
 {
@@ -391,7 +392,7 @@ static void create3dwinpane(Widget parent, Widget tm, Widget wchrc, Widget pinfo
 		(XtCallbackProc) resizewindow3dcb, (XtPointer) i);
     XtAddCallback(sa->glw, GLwNinputCallback,
 		  (XtCallbackProc) inputwindow3dcb, (XtPointer) i);
-    /* GLwCreateMDrawingArea は未管理。Manage しないと realize されず描画領域が出ない */
+    /* GLwCreateMDrawingArea is unmanaged until explicitly managed and realized. */
     XtManageChild(sa->glw);
   }
 }

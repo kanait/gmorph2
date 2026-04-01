@@ -968,7 +968,7 @@ SGlp *ShortestPath_Dijkstra_SGraph( SGraph *sg, SGvt *src, SGvt *dist )
   int      sg_stepnumber_to_src( SGVtList *, SGvt *, SGvt * );
   void     free_sgpqheap ( SGPQHeap * );
   
-  /* Spvt の初期化 */
+  /* Initialize Spvt state. */
 
   for ( i = 0, vt = sg->sgvt; vt != (SGvt *) NULL; vt = vt->nxt, ++i ) {
     vt->sid = i;
@@ -992,10 +992,10 @@ SGlp *ShortestPath_Dijkstra_SGraph( SGraph *sg, SGvt *src, SGvt *dist )
     insert_sgpqcont( vted->ed->length, pqh, avt, src );
   }
   
-  /* vtlist: S から 1 つのエッジで辿れるものしか値が入らない */
+  /* vtlist initially contains only vertices reachable from S by one edge. */
   
   for ( i = 0; i < sg->sgvtn - 1; ++i ) {
-    /* min_tvt S に加える */
+    /* Add min_tvt to S. */
     min_dis = pqh->pqcont[0].distance;
     min_tvt = pqh->pqcont[0].tgt_vt;
 /*     if ( min_tvt->no == 58 ) { */
@@ -1007,7 +1007,7 @@ SGlp *ShortestPath_Dijkstra_SGraph( SGraph *sg, SGvt *src, SGvt *dist )
     vtlist[ min_tvt->sid ].prv = pqh->pqcont[0].prv_vt;
     vtlist[ min_tvt->sid ].dis = min_dis;
 
-    /* min_tvt をヒープから消去 */
+    /* Remove min_tvt from the heap. */
     deletemin_sgpqcont( pqh );
     
     for ( vted = min_tvt->svted; vted != (SGvted *) NULL; vted = vted->nxt ) {

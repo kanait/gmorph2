@@ -440,7 +440,7 @@ void write_gmh_file( char *file, HPpd *hppd )
   fclose(fp);
 }
 
-/* GMH 内の PPD 名が相対パスのとき、.gmh と同じディレクトリから開く */
+/* Resolve relative PPD names from the directory that contains the .gmh file. */
 static void gmh_resolve_ppd_path(const char *gmhpath, const char *name,
 				 char *out, size_t outsz)
 {

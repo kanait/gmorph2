@@ -25,7 +25,7 @@ void init_gl3d(ScreenAtr *screen)
   {
     Display *dpy = XtDisplay(screen->glw);
 
-    /* create3dwinpane で選んだ vi を使う（XtGetValues は GLw によっては壊れる） */
+    /* Use the visual chosen in create3dwinpane; XtGetValues can be unreliable for some GLw builds. */
     if (!screen->vi) {
       fprintf(stderr, "gmorph2b8: missing GLX visual (init_gl3d).\n");
       exit(1);

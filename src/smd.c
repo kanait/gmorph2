@@ -47,7 +47,7 @@ Swin *create_swin( void )
 
 void display3d_initialize(Disp3D *disp)
 {
-  /* 既定はシェーディングのみ ON（ワイヤは OFF） */
+  /* Default to shading on and wireframe off. */
   disp->wire    = SMD_OFF;
   disp->shading = SMD_ON;
   disp->cpoint  = SMD_OFF;
