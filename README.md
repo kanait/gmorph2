@@ -37,7 +37,7 @@ make
 ## Usage
 
 The `gmorph2b8` executable supports both command-line and GUI use.
-Morphing PPD generation has been verified for the following GMH files under `data.v2.0`.
+Morphing PPD generation has been verified for the following GMH files under `data`.
 (Figure numbers are those in the paper cited above.)
 
 - bunny-tiger/bunny-tiger#1_SP001.gmh (Bunny's head - Tiger's head, rough corres., Figure 12(a))
