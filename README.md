@@ -11,6 +11,7 @@ This code is provided **for research purposes only and without any support**.
 Originally, it was developed as code that runs on SGI workstations around 1997-1998.
 This code was created earlier than the [Windows version](https://github.com/kanait/gmorph); the Windows version was later developed based on this code.
 Recently, I updated the code to compile and run on Ubuntu 24.04, and fixed a few minor bugs that had been present since then.
+Compared with the original 1997-era code, the harmonic-map sparse solver has also been replaced from `linbcg` to an Eigen-based implementation for licensing reasons.
 
 ## Compilation
 
@@ -20,6 +21,7 @@ To compile the code, you need to install the following libraries (via `apt`):
 - libgl1-mesa-dev
 - libglu1-mesa-dev
 - libglw1-mesa-dev
+- libeigen3-dev
 - libxpm-dev
 You may also need additional libraries required by the packages above (for example: `libx11-dev`, `libxext-dev`, `libxt-dev`, `libxi-dev`, `libsm-dev`, `libice-dev`).
 

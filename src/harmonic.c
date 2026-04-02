@@ -1,13 +1,36 @@
 /* Copyright (c) 1996-1997 Takashi Kanai; All rights reserved. */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "cinc.h"
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
 
+#ifdef __cplusplus
+}
+#endif
+
 #include <stdint.h>
+#include <vector>
+
+#ifdef Success
+#undef Success
+#endif
+#ifdef Status
+#undef Status
+#endif
+
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 
 #define	KAPPA	1.0
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*******************************************************************************
   STEP 2: harmonic maps (Related functions are in "harmonic.c".)
@@ -39,32 +62,154 @@ void hppdharmonic( HPpd *hppd )
 /* harmonic mapping functions */
 void hgfcharmonic( HGfc *hgfc, Splp *lp )
 {
-  int    iter;
-  int    vn;
-  double rsq;
-  Semat  *emat;
   int    initialize_hgfc( HGfc * );
-  Semat  *create_harmonic_emat( HGfc * );
-  void   harmonic_initialize_vector( HGfc *, Splp *, Semat * );
-  int    linbcg( Semat *, double *, double *, int, double, int, int *, double *);
-  void   solvec_hgfc( HGfc *, Semat * );
+  void   free_hgppdvertexvertex( HGvt * );
+  void   FreeHGppdVertexVertex( HGfc * );
   void   exit_hgfc( HGfc * );
-  void   free_emat( Semat * );
-  void   printemat( Semat * );
+  Vec2d *calc_uvbprm( int );
+  double *harmonic_calc_kappa( HGfc * );
+  HGvtvt *find_sort_hgvtvt( HGvt *, Id );
 
-/*   display("group %d\n", hgfc->id ); */
+  typedef Eigen::Triplet<double> HarmonicTriplet;
+  std::vector<HarmonicTriplet> triplets;
+  Eigen::SparseMatrix<double>  spmat;
+  Eigen::VectorXd bx, by, xx, xy;
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<double> > solver;
+  double *kappa;
+  HGvt   *vt;
+  HGvted *ve;
+  HGed   *ed;
+  HGvtvt *vv;
+  Vec2d  *uvbprm;
+  Sple   *le, *tle, *sle;
+  Splv   *lv, *tlv, *slv, *elv;
+  double sum, esum, val;
+  Vec2d  sub;
+  int    i;
+  int    vn;
+  int    id;
+
   vn = initialize_hgfc( hgfc );
-/*   display("group No.%d vn %d\n", hgfc->id, vn); */
-  emat = create_harmonic_emat( hgfc );
-  harmonic_initialize_vector( hgfc, lp, emat );
 
-/*   if ( vn ) { */
-    linbcg( emat, emat->bx, emat->xx, 1, SMDZEROEPS, 1000, &iter, &rsq );
-    linbcg( emat, emat->by, emat->yy, 1, SMDZEROEPS, 1000, &iter, &rsq );
-    solvec_hgfc( hgfc, emat );
-/*   } */
+  kappa = harmonic_calc_kappa( hgfc );
 
-  free_emat( emat );
+  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+    vt->vval = 0.0;
+  }
+
+  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+    for ( ve = vt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) {
+      ed = ve->ed;
+      if ( ed == (HGed *) NULL ) continue;
+      if ( ed->sv == (HGvt *) NULL || (uintptr_t)ed->sv < 0x10000 ) continue;
+      if ( ed->ev == (HGvt *) NULL || (uintptr_t)ed->ev < 0x10000 ) continue;
+
+      id = ed->sv->sid;
+      if ( vt->sid != id ) {
+        vv = find_sort_hgvtvt( vt, id );
+        vv->val -= kappa[ed->sid];
+      } else {
+        vt->vval += kappa[ed->sid];
+      }
+
+      id = ed->ev->sid;
+      if ( vt->sid != id ) {
+        vv = find_sort_hgvtvt( vt, id );
+        vv->val -= kappa[ed->sid];
+      } else {
+        vt->vval += kappa[ed->sid];
+      }
+    }
+  }
+
+  free( kappa );
+
+  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+    if ( vt->vt->sp_type != SP_VERTEX_NORMAL ) {
+      vt->vval = 1.0;
+      free_hgppdvertexvertex( vt );
+    }
+  }
+
+  triplets.reserve( hgfc->hgvn * 8 );
+  spmat.resize( hgfc->hgvn, hgfc->hgvn );
+
+  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+    triplets.push_back( HarmonicTriplet( vt->sid, vt->sid, vt->vval ) );
+    if ( vt->vt->sp_type == SP_VERTEX_NORMAL ) {
+      for ( vv = vt->shgvv; vv != (HGvtvt *) NULL; vv = vv->nxt ) {
+        triplets.push_back( HarmonicTriplet( vt->sid, vv->id, vv->val ) );
+      }
+    }
+  }
+
+  spmat.setFromTriplets( triplets.begin(), triplets.end() );
+  FreeHGppdVertexVertex( hgfc );
+
+  bx = Eigen::VectorXd::Zero( hgfc->hgvn );
+  by = Eigen::VectorXd::Zero( hgfc->hgvn );
+  xx = Eigen::VectorXd::Zero( hgfc->hgvn );
+  xy = Eigen::VectorXd::Zero( hgfc->hgvn );
+
+  uvbprm = calc_uvbprm( hgfc->hgcn );
+  lv = lp->splv;
+  le = lp->sple;
+  i = 0;
+  while ( i < hgfc->hgcn ) {
+    slv = lv;
+    sle = le;
+    sum = 0.0;
+
+    while ( 1 ) {
+      sum += le->ed->length;
+      lv = lv->nxt;
+      le = le->nxt;
+      if ( lv == (Splv *) NULL ) {
+        elv = lp->splv;
+        break;
+      }
+      if ( lv->vt->sp_type == SP_VERTEX_HVERTEX ) {
+        elv = lv;
+        break;
+      }
+    }
+
+    esum = 0.0;
+    tlv = slv;
+    tle = sle;
+    sub.x = uvbprm[i+1].x - uvbprm[i].x;
+    sub.y = uvbprm[i+1].y - uvbprm[i].y;
+    while ( 1 ) {
+      val = esum / sum;
+      bx[tlv->hgvt->sid] = uvbprm[i].x + sub.x * val;
+      by[tlv->hgvt->sid] = uvbprm[i].y + sub.y * val;
+
+      esum += tle->ed->length;
+      tlv = tlv->nxt;
+      tle = tle->nxt;
+
+      if ( (tlv == elv) || (tlv == (Splv *) NULL) ) {
+        break;
+      }
+    }
+
+    ++i;
+  }
+  free( uvbprm );
+
+  solver.compute( spmat );
+  if ( solver.info() == Eigen::Success ) {
+    xx = solver.solve( bx );
+  }
+  if ( solver.info() == Eigen::Success ) {
+    xy = solver.solve( by );
+  }
+
+  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
+    vt->uvw.x = xx[vt->sid];
+    vt->uvw.y = xy[vt->sid];
+  }
+
   exit_hgfc( hgfc );
 /*   display("\n"); */
 }
@@ -94,88 +239,6 @@ int initialize_hgfc( HGfc *hgfc )
   return cnt;
 }
 
-Semat *create_harmonic_emat( HGfc *hgfc )
-{
-  int    i, j, vn, cnt;
-  int    id;
-  double *kappa;
-  Semat  *emat;
-  HGvt   *vt;
-  HGed   *ed;
-  HGvted *ve;
-  HGvtvt *vv;
-  Semat  *init_emat( int );
-  double *harmonic_calc_kappa( HGfc * );
-  HGvtvt *find_sort_hgvtvt( HGvt *, Id );
-  void   free_hgppdvertexvertex( HGvt * );
-  void   dsprsin( HGfc *, Semat * );
-  void   FreeHGppdVertexVertex( HGfc * );
-  
-  emat = init_emat( hgfc->hgvn );
-  
-  kappa = harmonic_calc_kappa( hgfc );
-
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    vt->vval = 0.0;
-  }
-
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    for ( ve = vt->shgve; ve != (HGvted *) NULL; ve = ve->nxt ) {
-      
-      ed = ve->ed;
-      /* Safety: ed/sv/ev can become invalid for some inputs.
-       * Skip edges that would cause zero-page dereference. */
-      if ( ed == (HGed *) NULL ) continue;
-      if ( ed->sv == (HGvt *) NULL || (uintptr_t)ed->sv < 0x10000 ) continue;
-      if ( ed->ev == (HGvt *) NULL || (uintptr_t)ed->ev < 0x10000 ) continue;
-      /* sv */
-      id = ed->sv->sid;
-      if (vt->sid != id) {
-	vv = find_sort_hgvtvt( vt, id );
-	vv->val -= kappa[ed->sid];
-      } else {
-	vt->vval += kappa[ed->sid];
-      }
-      /* ev */
-      id = ed->ev->sid;
-      if (vt->sid != id) {
-	vv = find_sort_hgvtvt( vt, id );
-	vv->val -= kappa[ed->sid];
-      } else {
-	vt->vval += kappa[ed->sid];
-      }
-    }
-  }
-  
-  /* Boundary Points are fixed. */
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    
-    if ( vt->vt->sp_type != SP_VERTEX_NORMAL ) {
-      vt->vval = 1.0;
-      free_hgppdvertexvertex( vt );
-    }
-    
-  }
-
-  vn = 0;
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    vn += vt->hgvvn;
-  }
-
-  emat->num = vn + hgfc->hgvn + 1;
-  emat->sa  = (double *) malloc(emat->num * sizeof(double));
-  for (i = 0; i < emat->num; ++i) emat->sa[i] = 0.0;
-  emat->ija = (int *) malloc(emat->num * sizeof(int));
-
-  dsprsin( hgfc, emat );
-  
-  free(kappa);
-
-  FreeHGppdVertexVertex( hgfc );
-  
-  return emat;
-}
-
 double *harmonic_calc_kappa( HGfc *hgfc )
 {
   double *kappa;
@@ -188,115 +251,6 @@ double *harmonic_calc_kappa( HGfc *hgfc )
     kappa[ed->sid] = 1.0;
   }
   return kappa;
-}
-
-static double uvprmsx[4] = {
-  1.0, 0.0, 0.0, 1.0
-};
-  
-static double uvprmsy[4] = {
-  0.0, 1.0, 0.0, 0.0
-};
-  
-void harmonic_initialize_vector( HGfc *hgfc, Splp *lp, Semat *emat )
-{
-  int    i;
-  HGvt   *vt;
-  Vec2d  *uvbprm;
-  Sple   *le, *tle, *sle;
-  Splv   *lv, *tlv, *slv, *elv;
-  double sum, esum, val;
-  Vec2d  sub;
-  Vec2d *calc_uvbprm( int );
-
-  /* initialize vector */
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    
-    emat->bx[vt->sid] = emat->xx[vt->sid] = 0.0;
-    emat->by[vt->sid] = emat->yy[vt->sid] = 0.0;
-    
-  }
-
-  uvbprm = calc_uvbprm( hgfc->hgcn );
-
-  /* calculate boundary values */
-
-  lv = lp->splv;
-  le = lp->sple;
-
-  i = 0;
-  while ( i < hgfc->hgcn ) {
-
-    slv = lv;
-    sle = le;
-    sum = 0.0;
-
-    while ( 1 ) {
-/*       display("(%d) vt %d type %d\n", i, lv->vt->no, lv->vt->sp_type); */
-      sum += le->ed->length;
-      lv = lv->nxt;
-      le = le->nxt;
-      if ( lv == (Splv *) NULL ) {
-	elv = lp->splv;
-	break;
-      }
-      if ( lv->vt->sp_type == SP_VERTEX_HVERTEX ) {
-	elv = lv;
-	break;
-      }
-    }
-
-    esum = 0.0;
-    tlv = slv;
-    tle = sle;
-    sub.x = uvbprm[i+1].x - uvbprm[i].x;
-    sub.y = uvbprm[i+1].y - uvbprm[i].y;
-/*     display("\n"); */
-/*     display("sub %g %g\n", sub.x, sub.y); */
-    while ( 1 ) {
-      
-      val = esum / sum;
-/*       display("val %g\n", val ); */
-      emat->bx[ tlv->hgvt->sid ] = uvbprm[i].x + sub.x * val;
-      emat->by[ tlv->hgvt->sid ] = uvbprm[i].y + sub.y * val;
-/*       display("bx[%d] %g %g\n", tlv->hgvt->sid, */
-/* 	      emat->bx[ tlv->hgvt->sid ], */
-/* 	      emat->by[ tlv->hgvt->sid ]); */
-	      
-      esum += tle->ed->length;
-
-      tlv = tlv->nxt;
-      tle = tle->nxt;
-
-      if ( (tlv == elv) || (tlv == (Splv *) NULL) ) {
-/* 	display("val %g\n", esum / sum ); */
-	/* temp */
-/* 	if ( tlv == (Splv *) NULL ) tlv = lp->splv; */
-/* 	display("bx[%d] %g %g\n", tlv->hgvt->sid, */
-/* 	      emat->bx[ tlv->hgvt->sid ], */
-/* 	      emat->by[ tlv->hgvt->sid ]); */
-	break;
-      }
-    }
-    
-    ++i;
-  }
-
-/*   for ( lv = lp->splv; lv != (Splv *) NULL; lv = lv->nxt ) { */
-/*     display("vt %d type %d bx[%d] %g %g\n", lv->hgvt->sid, */
-/* 	    lv->hgvt->vt->sp_type, */
-/* 	    lv->hgvt->sid,  */
-/* 	    emat->bx[ lv->hgvt->sid ], */
-/* 	    emat->by[ lv->hgvt->sid ]); */
-/*   } */
-/*   lv = lp->splv; */
-/*   display("vt %d type %d bx[%d] %g %g\n", lv->hgvt->sid, */
-/* 	  lv->hgvt->vt->sp_type, */
-/* 	  lv->hgvt->sid,  */
-/* 	  emat->bx[ lv->hgvt->sid ], */
-/* 	  emat->by[ lv->hgvt->sid ]); */
-    
-  free(uvbprm);
 }
 
 Vec2d *calc_uvbprm( int cn )
@@ -316,36 +270,6 @@ Vec2d *calc_uvbprm( int cn )
   return uvbprm;
 }
     
-void solvec_hgfc( HGfc *hgfc, Semat *emat )
-{
-  HGvt *vt;
-  
-  for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    
-    vt->uvw.x = emat->xx[vt->sid];
-    vt->uvw.y = emat->yy[vt->sid];
-/*     vt->uvw.z = 1.0 - emat->xx[vt->sid] - emat->yy[vt->sid]; */
-  }
-
-/*     vt->vec.x = ( vt->uvw.x * hgfc->cvt[0]->vec.x + */
-/* 		  vt->uvw.y * hgfc->cvt[1]->vec.x + */
-/* 		  vt->uvw.z * hgfc->cvt[2]->vec.x ); */
-      
-/*     vt->vec.y = ( vt->uvw.x * hgfc->cvt[0]->vec.y + */
-/* 		  vt->uvw.y * hgfc->cvt[1]->vec.y + */
-/* 		  vt->uvw.z * hgfc->cvt[2]->vec.y ); */
-      
-/*     vt->vec.z = ( vt->uvw.x * hgfc->cvt[0]->vec.z + */
-/* 		  vt->uvw.y * hgfc->cvt[1]->vec.z + */
-/* 		  vt->uvw.z * hgfc->cvt[2]->vec.z ); */
-    
-/*     display("vt %d type %d (uvw) %g %g %g (vec) %g %g %g\n", */
-/* 	    vt->sid, */
-/* 	    vt->vt->sp_type, */
-/* 	    vt->uvw.x, vt->uvw.y, vt->uvw.z, */
-/* 	    vt->vec.x, vt->vec.y, vt->vec.z); */
-}
-
 void exit_hgfc( HGfc *hgfc )
 {
   HGvt *hv;
@@ -368,46 +292,6 @@ void exit_hgfc( HGfc *hgfc )
   
 }
 
-/* Semat functions */
-Semat *init_emat( int num )
-{
-  Semat *emat;
-  
-  emat = (Semat *) malloc(sizeof(Semat));
-  emat->rnum = num;
-  emat->cnum = num;
-  /* constant vectors initialize */
-  emat->bx = (double *) malloc(num * sizeof(double));
-  emat->by = (double *) malloc(num * sizeof(double));
-  /* solution vectors initialize */
-  emat->xx = (double *) malloc(num * sizeof(double));
-  emat->yy = (double *) malloc(num * sizeof(double));
-
-  return emat;
+#ifdef __cplusplus
 }
-
-void free_emat(Semat *emat)
-{
-  free(emat->sa);
-  free(emat->ija);
-  free(emat->bx);
-  free(emat->by);
-  free(emat->xx);
-  free(emat->yy);
-  free(emat);
-}
-
-void printemat(Semat *emat)
-{
-  int i;
-  
-  for (i = 0; i < emat->cnum; ++i) {
-    display("%d (b) %f %f\n", i, emat->bx[i], emat->by[i]);
-    display("%d (x) %f %f\n", i, emat->xx[i], emat->yy[i]);
-  }
-  for (i = 0; i < emat->num; ++i) 
-    display("(%d) (sa) %f (ija) %d\n", i, emat->sa[i], emat->ija[i]);
-}
-
-
-  
+#endif

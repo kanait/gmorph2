@@ -25,19 +25,6 @@ typedef struct _mat4 {		/* 4-by-4 matrix */
 
 typedef double **Vmtx;
 
-/* matrix structure for linbcg */
-typedef struct _semat {
-  int    rnum;			/* matrix row */
-  int    cnum;			/* matrix column */
-  int    num;
-  int    *ija;
-  double *sa;
-  /* constant vectors */
-  double *bx, *by, *bz;
-  /* solution vectors */
-  double *xx, *yy, *zz;
-} Semat;
-
 /*************** PPD file format *********************
   node type parameters for memory allocation routines
 *******************************************************/
@@ -287,7 +274,6 @@ struct _vtnm {
   Vtnm *prv;
 };
 
-/* for linbcg */
 /* vertex -> other vertex */
 /* struct _vtvt { */
 /*   Id    id; */
@@ -764,7 +750,6 @@ struct _hgvted {
   HGvted *nxt, *prv;
 };
 
-/* for linbcg */
 /* vertex -> other vertex */
 struct _hgvtvt {
   
