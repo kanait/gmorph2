@@ -7,6 +7,7 @@
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMouseEvent>
 #include <QtCore/QCoreApplication>
+#include <QtGui/QKeySequence>
 #include <QtGui/QShortcut>
 #include <QtGui/QSurfaceFormat>
 #include <QtGui/QWheelEvent>
@@ -17,6 +18,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QSplitter>
@@ -69,7 +71,8 @@ void free_swin(struct Swin *);
 void drawwindow(int);
 void gmorph_gl_pointer_event(int, int, unsigned int, unsigned int, int, int);
 void gmorph_file_dialog_ok(const char *);
-void gmorph_compute_morph(void);
+int gmorph_compute_morph(void);
+int time_last_processed(double *real_sec, double *user_sec, double *sys_sec);
 void gmorph_play_morph_animation(void);
 void gmorph_reset_morph_view(void);
 void gmorph_view_original_meshes(void);
@@ -114,6 +117,27 @@ static QIcon editToolbarIcon(const char *base)
   icon.addFile(p + QString::fromUtf8(base) + QStringLiteral("_32.png"), QSize(32, 32));
   icon.addFile(p + QString::fromUtf8(base) + QStringLiteral("_96.png"), QSize(32, 32));
   return icon;
+}
+
+static void qtShowMorphComputeResult(QMainWindow &parent, int ok)
+{
+  if (!ok) {
+    QMessageBox::warning(&parent, QStringLiteral("Morph"),
+                          QStringLiteral("Morph failed. Check the message log for details."));
+    return;
+  }
+  double real_s = 0, user_s = 0, sys_s = 0;
+  QString text = QStringLiteral("Morph completed successfully.");
+  if (time_last_processed(&real_s, &user_s, &sys_s)) {
+    text += QStringLiteral("\n\nProcessed time:\n"
+                           "\treal:\t%1 (s)\n"
+                           "\tuser:\t%2 (s)\n"
+                           "\tsys:\t%3 (s)")
+                .arg(real_s, 0, 'f', 2)
+                .arg(user_s, 0, 'f', 2)
+                .arg(sys_s, 0, 'f', 2);
+  }
+  QMessageBox::information(&parent, QStringLiteral("Morph"), text);
 }
 
 } /* namespace */
@@ -369,7 +393,13 @@ extern "C" void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh
 
   QMenuBar *mb = mainWin.menuBar();
   QMenu *fileMenu = mb->addMenu(QStringLiteral("File"));
-  fileMenu->addAction(QStringLiteral("Open GMH…"), [] { qtOpenFile(SMDFILEGMH); });
+  {
+    QAction *openGmh = fileMenu->addAction(QStringLiteral("Open GMH…"));
+    /* Qt::CTRL → Command on macOS, Ctrl on Windows/Linux (same as other cross-platform apps). */
+    openGmh->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F));
+    openGmh->setShortcutContext(Qt::ApplicationShortcut);
+    QObject::connect(openGmh, &QAction::triggered, []() { qtOpenFile(SMDFILEGMH); });
+  }
   fileMenu->addAction(QStringLiteral("Open PPD (left)…"), [] { qtOpenFile(SMDFILEPPD1); });
   fileMenu->addAction(QStringLiteral("Open PPD (right)…"), [] { qtOpenFile(SMDFILEPPD2); });
   fileMenu->addAction(QStringLiteral("Open morph PPD…"), [] { qtOpenFile(SMDFILEGPPD); });
@@ -380,9 +410,10 @@ extern "C" void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh
   fileMenu->addAction(QStringLiteral("Quit"), QKeySequence::Quit, &mainWin, &QMainWindow::close);
 
   QMenu *morphMenu = mb->addMenu(QStringLiteral("Morph"));
-  morphMenu->addAction(QStringLiteral("Compute harmonic morph…"), [] {
-    gmorph_compute_morph();
+  morphMenu->addAction(QStringLiteral("Compute harmonic morph…"), [&mainWin] {
+    const int ok = gmorph_compute_morph();
     qtRedrawBoth();
+    qtShowMorphComputeResult(mainWin, ok);
   });
   morphMenu->addAction(QStringLiteral("Play morph animation (Space)"),
                        [] { gmorph_play_morph_animation(); });
@@ -400,8 +431,9 @@ extern "C" void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh
   editTb->setIconSize(QSize(28, 28));
 
   for (const auto &em : kEditModes) {
-    auto *act = new QAction(editToolbarIcon(em.iconBase), QString(), &mainWin);
-    act->setToolTip(QString::fromUtf8(em.tip));
+    const QString label = QString::fromUtf8(em.tip);
+    auto *act = new QAction(editToolbarIcon(em.iconBase), label, &mainWin);
+    act->setToolTip(label);
     act->setCheckable(true);
     editGroup->addAction(act);
     editTb->addAction(act);
@@ -440,9 +472,10 @@ extern "C" void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh
   auto *morphTb = new QToolBar(QStringLiteral("Morph"));
   morphTb->setMovable(false);
   QAction *mkMorph = new QAction(QStringLiteral("Make morph"), &mainWin);
-  QObject::connect(mkMorph, &QAction::triggered, [] {
-    gmorph_compute_morph();
+  QObject::connect(mkMorph, &QAction::triggered, [&mainWin] {
+    const int ok = gmorph_compute_morph();
     qtRedrawBoth();
+    qtShowMorphComputeResult(mainWin, ok);
   });
   morphTb->addAction(mkMorph);
   QAction *startMorph = new QAction(QStringLiteral("Start"), &mainWin);

@@ -20,6 +20,29 @@
 static struct tms tbuf1;
 static long real1;
 
+static int time_last_valid;
+static double time_last_real;
+static double time_last_user;
+static double time_last_sys;
+
+void time_invalidate_last(void)
+{
+  time_last_valid = 0;
+}
+
+int time_last_processed(double *real_sec, double *user_sec, double *sys_sec)
+{
+  if (!time_last_valid)
+    return 0;
+  if (real_sec != NULL)
+    *real_sec = time_last_real;
+  if (user_sec != NULL)
+    *user_sec = time_last_user;
+  if (sys_sec != NULL)
+    *sys_sec = time_last_sys;
+  return 1;
+}
+
 void time_start(void)
 {				/* start timer */
   real1 = times(&tbuf1);
@@ -35,6 +58,10 @@ void time_stop(void)
   realtime = (real2 - real1) / TICKS;
   usertime = (tbuf2.tms_utime - tbuf1.tms_utime) / TICKS;
   systime  = (tbuf2.tms_stime - tbuf1.tms_stime) / TICKS;
+  time_last_real = realtime;
+  time_last_user = usertime;
+  time_last_sys = systime;
+  time_last_valid = 1;
   display("processed time: \n");
   display("\treal:\t%.2f (s)\n", realtime);
   display("\tuser:\t%.2f (s)\n", usertime);

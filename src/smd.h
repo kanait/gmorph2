@@ -1374,6 +1374,9 @@ typedef struct _swin {
 extern void display(char *,...);
 extern void displayinfo(char *,...);
 
+extern void time_invalidate_last(void);
+extern int time_last_processed(double *real_sec, double *user_sec, double *sys_sec);
+
 /* Qt6 GUI bridge (implemented in gmorph_qt.cpp and supporting C files) */
 extern void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh_path);
 extern void gmorph_qt_make_gl_current(int screen_idx);
@@ -1384,7 +1387,7 @@ extern void gmorph_gl_pointer_event(int screen_idx, int x11_event_type,
     unsigned int button, unsigned int state, int x, int y);
 extern void gmorph_file_dialog_ok(const char *path);
 extern void gmorph_change_edit_type(int kind);
-extern void gmorph_compute_morph(void);
+extern int gmorph_compute_morph(void);
 extern void gmorph_play_morph_animation(void);
 extern void gmorph_view_original_meshes(void);
 extern void gmorph_reset_morph_view(void);

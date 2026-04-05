@@ -13,9 +13,15 @@ This code was created earlier than the [Windows version](https://github.com/kana
 Recently, I updated the code to compile and run on Ubuntu 24.04, and fixed a few minor bugs that had been present since then.
 Compared with the original 1997-era code, the harmonic-map sparse solver has also been replaced from `linbcg` to an Eigen-based BiCGSTAB implementation for licensing reasons.
 
+## GUI: Qt 6 and `-gui`
+
+The interactive GUI is implemented with **Qt 6** (`Widgets`, `OpenGL`, `OpenGLWidgets`): run `gmorph2b8 -gui` to open the Qt main window and OpenGL views. The original **Motif / X11** sources are still compiled and linked into the same binary (shared data structures and callbacks), so you still need OpenMotif and X11 development packages at build time even if you only use the Qt interface. On the command line, morphing works without displaying a Qt window.
+
 ## Compilation
 
-To compile the code, you need to install the following libraries (via `apt`):
+### Ubuntu / Debian
+
+To compile the code, install the following libraries (via `apt`):
 
 - libmotif-dev
 - libgl1-mesa-dev
@@ -23,16 +29,35 @@ To compile the code, you need to install the following libraries (via `apt`):
 - libglw1-mesa-dev
 - libeigen3-dev
 - libxpm-dev
+
 You may also need additional libraries required by the packages above (for example: `libx11-dev`, `libxext-dev`, `libxt-dev`, `libxi-dev`, `libsm-dev`, `libice-dev`).
 
-To create the executable file **gmorph2b8**, use CMake:
+### macOS (Homebrew)
+
+On a Mac, install **X11 client libraries**, **OpenMotif**, **XQuartz** (for X11 headers/libraries, `GLw`, and a `libGL` that exposes **GLX** — Apple’s `OpenGL.framework` does not provide `glX*`, which this tree still uses from the legacy GL code path), plus **Qt 6** and **Eigen** for the current build:
+
+```bash
+brew install libx11 libxext libxt libxi libsm libice libxpm openmotif
+brew install qt eigen
+brew install --cask xquartz
+```
+
+After installing the XQuartz cask, complete its installer if prompted; a **logout/login** (or reboot) is often needed before `/opt/X11` and the X11 environment are picked up reliably. Ensure `pkg-config` can see the `.pc` files (CMake prepends common paths such as `/opt/homebrew/lib/pkgconfig` or `/usr/local/lib/pkgconfig` and `/opt/X11/lib/pkgconfig`, depending on your machine).
+
+If `libGL` with GLX is not found, install Mesa as an alternative to satisfy linking: `brew install mesa` (see the CMake configuration messages).
+
+### Build with CMake
+
+To create the executable **gmorph2b8**:
 
 ```bash
 mkdir build
 cd build
 cmake ..
-make
+cmake --build .
 ```
+
+(On Linux you can use `make` instead of `cmake --build .` if you use the default Makefile generator.)
 
 ## Usage
 

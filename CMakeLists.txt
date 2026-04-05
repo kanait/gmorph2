@@ -16,8 +16,11 @@ set(GMORPH_C_FLAGS "-O -g3 -funroll-loops -pedantic -ffast-math -DSHM")
 if(APPLE)
   # macOS / Clang: no glibc _DEFAULT_SOURCE; -ansi is overly strict with system headers.
   string(APPEND GMORPH_C_FLAGS " -D_DARWIN_C_SOURCE")
+  # Homebrew Qt 6 is often built for macOS 14+. Homebrew openmotif’s libXm may declare a higher
+  # min OS (e.g. 26) — ld then warns when linking; that mismatch is usually safe to ignore unless
+  # you ship on very old macOS. To silence: cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=<match libXm>.
   if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version" FORCE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS version" FORCE)
   endif()
 else()
   string(APPEND GMORPH_C_FLAGS " -ansi -D_DEFAULT_SOURCE")
@@ -93,6 +96,10 @@ if(APPLE)
   target_compile_options(gmorph2b8 PRIVATE
     "-U__STRICT_ANSI__"
     "-include" "${CMAKE_CURRENT_SOURCE_DIR}/src/gmorph_apple_libcxx_compat.h")
+  # X11.pc + Motif + Mesa can each repeat -lX11 -lGL …; harmless but noisy.
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_link_options(gmorph2b8 PRIVATE "LINKER:-no_warn_duplicate_libraries")
+  endif()
 endif()
 
 # Find required packages

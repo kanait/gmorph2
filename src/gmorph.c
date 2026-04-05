@@ -872,14 +872,16 @@ int gmh_ok( char *str )
   return SUCCEED;
 }
 
-void gmorph_compute_morph(void)
+int gmorph_compute_morph(void)
 {
   Sppd *ppdgmorph_v2( HPpd * );
   void clear_gmorph( HPpd * );
 
+  time_invalidate_last();
+
   if ( swin->hppd == (HPpd *) NULL ) {
     displayinfo("can't execute gmorph.\n");
-    return;
+    return FAIL;
   }
 
   if ( swin->morph_ppd != (Sppd *) NULL ) {
@@ -889,10 +891,11 @@ void gmorph_compute_morph(void)
 
   if ( (swin->morph_ppd = ppdgmorph_v2( swin->hppd )) == (Sppd *) NULL ) {
     displayinfo("can't execute gmorph.\n");
-    return;
+    return FAIL;
   }
 
   displayinfo("gmorph succeedingly ended.\n");
+  return SUCCEED;
 }
 
 void makegmorphcb( Widget w, XtPointer cld, XtPointer *cad )
