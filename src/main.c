@@ -225,6 +225,15 @@ void main( int argc, char *argv[] )
   /* GUI open (Qt6; CLI keeps this translation unit as C main) */
   if ( guiflag ) {
     swin->use_qt_gui = 1;
+#if defined(__APPLE__)
+    /* Overwrite env: shells often set QT_QPA_PLATFORM=xcb; force Cocoa QPA. */
+    if ( setenv( "QT_QPA_PLATFORM", "cocoa", 1 ) != 0 )
+      fprintf( stderr, "GMorph: warning: setenv QT_QPA_PLATFORM failed\n" );
+    /* XQuartz libGL (GLX) pulls libX11-xcb; with DISPLAY set, startup can call
+     * XGetXCBConnection(NULL) and segfault before the Qt window appears. Qt
+     * Cocoa + QOpenGLWidget do not need DISPLAY. */
+    unsetenv( "DISPLAY" );
+#endif
     gmorph_run_qt6_gui( argc, argv, fileflag ? file[0] : NULL );
   } else {
 

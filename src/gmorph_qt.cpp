@@ -6,6 +6,7 @@
 #include <QtGui/QCloseEvent>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMouseEvent>
+#include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QKeySequence>
 #include <QtGui/QShortcut>
@@ -352,6 +353,10 @@ static void qtSaveFile(int filed)
 
 extern "C" void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh_path)
 {
+#if defined(__APPLE__)
+  /* Must match main.c: never use xcb here (invalid Display* → XGetXCBConnection crash). */
+  qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("cocoa"));
+#endif
   QApplication app(argc, argv);
 
   QSurfaceFormat fmt;
