@@ -179,7 +179,7 @@ void main( int argc, char *argv[] )
     fprintf(stderr, "options: \n");
     fprintf(stderr, "\t -i        : input src and target ppd file. \n");
     fprintf(stderr, "\t -m        : input morphing ppd file. \n");
-    fprintf(stderr, "\t -rec      : recording morphing results. \n\t\t- output: continuous ppd files (default filename: poi) .\n");
+    fprintf(stderr, "\t -rec      : recording morphing results. \n\t\t- output: continuous Wavefront OBJ files (default basename: poi) .\n");
     fprintf(stderr, "\t -div      : morphing division number (default: 10).\n");
     fprintf(stderr, "\t -gui      : display window.\n");
     fprintf(stderr, "\t -print    : print display mode.\n");

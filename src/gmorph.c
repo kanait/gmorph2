@@ -233,7 +233,7 @@ void record_morphppd( char *rec, Sppd * ppd )
   Spvt   *v;
   Spfc *fc;
   Vec    *mvec1, *mvec2;
-  void   write_ppd_file(char *, Sppd *);
+  void   write_obj_file(char *, Sppd *);
   void   calc_fnorm( Spfc * );
   void   ppdnorm( Sppd * );
 
@@ -259,8 +259,8 @@ void record_morphppd( char *rec, Sppd * ppd )
 	}
 	ppdnorm( ppd );
       }
-      sprintf(file, "%s%03d.ppd", rec, i);
-      write_ppd_file(file, ppd);
+      sprintf(file, "%s%03d.obj", rec, i);
+      write_obj_file(file, ppd);
       ++i;
     }
   }

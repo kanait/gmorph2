@@ -72,7 +72,7 @@ This will start the GUI.
 * `-div <n>`: morphing division number (default: 100; also affects the animation smoothness in GUI mode).
 * `-smooth`: enable smooth shading.
 * `-enh_disp`: enable enhanced display mode.
-* `-rec <name>`: record morphing PPDs to files like `<name>_1.ppd`, `<name>_2.ppd`, ...
+* `-rec <name>`: record morphing meshes as Wavefront OBJ files like `<name>001.obj`, `<name>002.obj`, ... (frame count follows `-div`).
 * `-mphtosgi`: save morphing results to SGI image files.
 * `-spath <sublength> <out.gmh>`: make shortest-path mode graph (CLI-only).
 

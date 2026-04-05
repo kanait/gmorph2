@@ -294,6 +294,111 @@ void write_ppd_file( char *fname, Sppd *ppd )
   fclose(fp);
 }
 
+/* Wavefront OBJ: same vertex / normal / face indexing as write_ppd_file */
+void write_obj_file( char *fname, Sppd *ppd )
+{
+  FILE *fp;
+  Spso *s;
+  Sppt *p;
+  Spfc *f;
+  Spvt *v;
+  Spnm *nm;
+  Sphe *he;
+  int  i, j, n;
+  int  solidnum, partnum, vertexnum, normalnum;
+  int  facenum;
+  Id   vtx[128], nrm[128];
+  Vec  vec;
+
+  for (s = ppd->spso, solidnum = 0; s != (Spso *) NULL; s = s->nxt) {
+    ++solidnum;
+  }
+  for (p = ppd->sppt, partnum = 0; p != (Sppt *) NULL; p = p->nxt) {
+    ++partnum;
+  }
+  for (v = ppd->spvt, vertexnum = 0; v != (Spvt *) NULL; v = v->nxt) {
+    if ( v->sp_type != SP_VERTEX_STEINER ) {
+      ++vertexnum;
+    }
+  }
+  for (nm = ppd->spnm, normalnum = 0; nm != (Spnm *) NULL; nm = nm->nxt) {
+    ++normalnum;
+  }
+  for (f = ppd->spfc, facenum = 0; f != (Spfc *) NULL; f = f->nxt) {
+    ++facenum;
+  }
+
+  if ((fp = fopen(fname, "w")) == NULL) {
+    return;
+  }
+
+  fprintf(fp, "# Wavefront OBJ (gmorph2 -rec)\n");
+
+  if (vertexnum) {
+    i = 1;
+    for (s = ppd->spso; s != (Spso *) NULL; s = s->nxt) {
+      for (v = ppd->spvt; v != (Spvt *) NULL; v = v->nxt) {
+	if (v->bpso == s) {
+	  if ( v->sp_type != SP_VERTEX_STEINER ) {
+	    v->sid = i;
+	    if ( fabs(v->vec.x) > SMDZEROEPS ) vec.x = v->vec.x; else vec.x = 0;
+	    if ( fabs(v->vec.y) > SMDZEROEPS ) vec.y = v->vec.y; else vec.y = 0;
+	    if ( fabs(v->vec.z) > SMDZEROEPS ) vec.z = v->vec.z; else vec.z = 0;
+	    fprintf(fp, "v %g %g %g\n", vec.x, vec.y, vec.z);
+	    ++i;
+	  }
+	}
+      }
+    }
+  }
+
+  if (normalnum) {
+    i = 1;
+    for (s = ppd->spso; s != (Spso *) NULL; s = s->nxt) {
+      for (nm = ppd->spnm; nm != (Spnm *) NULL; nm = nm->nxt) {
+	if (nm->bpso == s) {
+	  nm->sid = i;
+	  fprintf(fp, "vn %g %g %g\n", nm->vec.x, nm->vec.y, nm->vec.z);
+	  ++i;
+	}
+      }
+    }
+  }
+
+  if (facenum && vertexnum) {
+    for (s = ppd->spso; s != (Spso *) NULL; s = s->nxt) {
+      for (p = ppd->sppt; p != (Sppt *) NULL; p = p->nxt) {
+	for (f = ppd->spfc; f != (Spfc *) NULL; f = f->nxt) {
+	  if ((f->bpso == s) && (f->bppt == p)) {
+	    he = f->sphe;
+	    n = 0;
+	    do {
+	      vtx[n] = he->vt->sid;
+	      if (normalnum) nrm[n] = he->nm->sid;
+	      ++n;
+	    } while ((he = he->nxt) != f->sphe);
+
+	    fprintf(fp, "f ");
+	    for (j = 0; j < n; ++j) {
+	      if (normalnum) {
+		fprintf(fp, "%d//%d", vtx[j], nrm[j]);
+	      } else {
+		fprintf(fp, "%d", vtx[j]);
+	      }
+	      if (j + 1 < n) {
+		fprintf(fp, " ");
+	      }
+	    }
+	    fprintf(fp, "\n");
+	  }
+	}
+      }
+    }
+  }
+
+  fclose(fp);
+}
+
 Sppd *open_ppd(char *fname)
 {
   /* file variables */
