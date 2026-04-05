@@ -1166,6 +1166,8 @@ typedef struct _screenatr {
   GLXContext     xc;
   void           *glx_fbc;       /* GLXFBConfig from glXChooseFBConfig, else NULL */
   Widget         fr3d;
+  /* Qt GUI: native X11 Display for glXUseXFont when glw is NULL */
+  void           *x11_display;
 
   /* width, height */
   int            width;
@@ -1246,6 +1248,9 @@ typedef struct _swin {
   /* global */
   Widget         toplevel;
   XtAppContext   apc;
+  int            use_qt_gui;     /* 1: Qt6 event loop + QOpenGLWidget (no Motif shell) */
+  int            qt_in_paint_gl; /* suppress redundant QWidget::update during paintGL */
+  int            qt_sync_views;  /* Qt: mirror 3D camera (rotate/zoom) between left/right */
 
   /* edit type */
   int            edit_type;
@@ -1368,6 +1373,21 @@ typedef struct _swin {
 
 extern void display(char *,...);
 extern void displayinfo(char *,...);
+
+/* Qt6 GUI bridge (implemented in gmorph_qt.cpp and supporting C files) */
+extern void gmorph_run_qt6_gui(int argc, char **argv, const char *loaded_gmh_path);
+extern void gmorph_qt_make_gl_current(int screen_idx);
+extern void gmorph_qt_request_update(int screen_idx);
+extern void gmorph_qt_process_events(void);
+extern void gmorph_qt_set_window_title(const char *path);
+extern void gmorph_gl_pointer_event(int screen_idx, int x11_event_type,
+    unsigned int button, unsigned int state, int x, int y);
+extern void gmorph_file_dialog_ok(const char *path);
+extern void gmorph_change_edit_type(int kind);
+extern void gmorph_compute_morph(void);
+extern void gmorph_play_morph_animation(void);
+extern void gmorph_view_original_meshes(void);
+extern void gmorph_reset_morph_view(void);
 
 /*** objects ***/
 

@@ -1,20 +1,12 @@
 /* Copyright (c) 1996-1997 Takashi Kanai; All rights reserved. */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "cinc.h"
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
-
-#ifdef __cplusplus
-}
-#endif
+#include "harmonic_eigen.h"
 
 #include <stdint.h>
-#include <vector>
 
 #ifdef Success
 #undef Success
@@ -23,14 +15,7 @@ extern "C" {
 #undef Status
 #endif
 
-#include <Eigen/Sparse>
-#include <Eigen/IterativeLinearSolvers>
-
 #define	KAPPA	1.0
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*******************************************************************************
   STEP 2: harmonic maps (Related functions are in "harmonic.c".)
@@ -70,11 +55,6 @@ void hgfcharmonic( HGfc *hgfc, Splp *lp )
   double *harmonic_calc_kappa( HGfc * );
   HGvtvt *find_sort_hgvtvt( HGvt *, Id );
 
-  typedef Eigen::Triplet<double> HarmonicTriplet;
-  std::vector<HarmonicTriplet> triplets;
-  Eigen::SparseMatrix<double>  spmat;
-  Eigen::VectorXd bx, by, xx, xy;
-  Eigen::BiCGSTAB<Eigen::SparseMatrix<double> > solver;
   double *kappa;
   HGvt   *vt;
   HGvted *ve;
@@ -86,10 +66,20 @@ void hgfcharmonic( HGfc *hgfc, Splp *lp )
   double sum, esum, val;
   Vec2d  sub;
   int    i;
-  int    vn;
   int    id;
 
-  vn = initialize_hgfc( hgfc );
+  size_t tcap;
+  size_t nt;
+  int   *tri_r;
+  int   *tri_c;
+  double *tri_v;
+  double *bx;
+  double *by;
+  double *xx;
+  double *xy;
+  int    sol;
+
+  (void)initialize_hgfc( hgfc );
 
   kappa = harmonic_calc_kappa( hgfc );
 
@@ -131,25 +121,87 @@ void hgfcharmonic( HGfc *hgfc, Splp *lp )
     }
   }
 
-  triplets.reserve( hgfc->hgvn * 8 );
-  spmat.resize( hgfc->hgvn, hgfc->hgvn );
+  tcap = (size_t)hgfc->hgvn * 8u;
+  if (tcap < 32u)
+    tcap = 32u;
+  tri_r = (int *)malloc(tcap * sizeof *tri_r);
+  tri_c = (int *)malloc(tcap * sizeof *tri_c);
+  tri_v = (double *)malloc(tcap * sizeof *tri_v);
+  nt = 0;
+  if (tri_r == NULL || tri_c == NULL || tri_v == NULL) {
+    free(tri_r);
+    free(tri_c);
+    free(tri_v);
+    exit_hgfc( hgfc );
+    return;
+  }
 
   for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
-    triplets.push_back( HarmonicTriplet( vt->sid, vt->sid, vt->vval ) );
+    if (nt >= tcap) {
+      size_t ncap = tcap * 2u;
+      int *nr = (int *)realloc(tri_r, ncap * sizeof *nr);
+      int *nc = (int *)realloc(tri_c, ncap * sizeof *nc);
+      double *nv = (double *)realloc(tri_v, ncap * sizeof *nv);
+      if (nr == NULL || nc == NULL || nv == NULL) {
+        free(tri_r);
+        free(tri_c);
+        free(tri_v);
+        exit_hgfc( hgfc );
+        return;
+      }
+      tri_r = nr;
+      tri_c = nc;
+      tri_v = nv;
+      tcap = ncap;
+    }
+    tri_r[nt] = vt->sid;
+    tri_c[nt] = vt->sid;
+    tri_v[nt] = vt->vval;
+    nt++;
     if ( vt->vt->sp_type == SP_VERTEX_NORMAL ) {
       for ( vv = vt->shgvv; vv != (HGvtvt *) NULL; vv = vv->nxt ) {
-        triplets.push_back( HarmonicTriplet( vt->sid, vv->id, vv->val ) );
+        if (nt >= tcap) {
+          size_t ncap = tcap * 2u;
+          int *nr = (int *)realloc(tri_r, ncap * sizeof *nr);
+          int *nc = (int *)realloc(tri_c, ncap * sizeof *nc);
+          double *nv = (double *)realloc(tri_v, ncap * sizeof *nv);
+          if (nr == NULL || nc == NULL || nv == NULL) {
+            free(tri_r);
+            free(tri_c);
+            free(tri_v);
+            exit_hgfc( hgfc );
+            return;
+          }
+          tri_r = nr;
+          tri_c = nc;
+          tri_v = nv;
+          tcap = ncap;
+        }
+        tri_r[nt] = vt->sid;
+        tri_c[nt] = vv->id;
+        tri_v[nt] = vv->val;
+        nt++;
       }
     }
   }
 
-  spmat.setFromTriplets( triplets.begin(), triplets.end() );
   FreeHGppdVertexVertex( hgfc );
 
-  bx = Eigen::VectorXd::Zero( hgfc->hgvn );
-  by = Eigen::VectorXd::Zero( hgfc->hgvn );
-  xx = Eigen::VectorXd::Zero( hgfc->hgvn );
-  xy = Eigen::VectorXd::Zero( hgfc->hgvn );
+  bx = (double *)calloc((size_t)hgfc->hgvn, sizeof *bx);
+  by = (double *)calloc((size_t)hgfc->hgvn, sizeof *by);
+  xx = (double *)calloc((size_t)hgfc->hgvn, sizeof *xx);
+  xy = (double *)calloc((size_t)hgfc->hgvn, sizeof *xy);
+  if (bx == NULL || by == NULL || xx == NULL || xy == NULL) {
+    free(tri_r);
+    free(tri_c);
+    free(tri_v);
+    XFREE(bx);
+    XFREE(by);
+    XFREE(xx);
+    XFREE(xy);
+    exit_hgfc( hgfc );
+    return;
+  }
 
   uvbprm = calc_uvbprm( hgfc->hgcn );
   lv = lp->splv;
@@ -197,18 +249,23 @@ void hgfcharmonic( HGfc *hgfc, Splp *lp )
   }
   free( uvbprm );
 
-  solver.compute( spmat );
-  if ( solver.info() == Eigen::Success ) {
-    xx = solver.solve( bx );
-  }
-  if ( solver.info() == Eigen::Success ) {
-    xy = solver.solve( by );
-  }
+  sol = gmorph_harmonic_bicgstab_xy(hgfc->hgvn, (int)nt, tri_r, tri_c, tri_v,
+                                    bx, by, xx, xy);
+  (void)sol;
+
+  free(tri_r);
+  free(tri_c);
+  free(tri_v);
+  free(bx);
+  free(by);
 
   for ( vt = hgfc->shgvt; vt != (HGvt *) NULL; vt = vt->nxt ) {
     vt->uvw.x = xx[vt->sid];
     vt->uvw.y = xy[vt->sid];
   }
+
+  free(xx);
+  free(xy);
 
   exit_hgfc( hgfc );
 /*   display("\n"); */
@@ -291,7 +348,3 @@ void exit_hgfc( HGfc *hgfc )
   }
   
 }
-
-#ifdef __cplusplus
-}
-#endif

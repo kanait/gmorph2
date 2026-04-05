@@ -15,6 +15,9 @@ void DisplayBusyCursor ( Widget w )
   static Cursor cursor = 0;
   /* static cursor = NULL;*/
 
+  if ( swin->use_qt_gui || w == NULL )
+    return;
+
   if ( !cursor ) 
     cursor = XCreateFontCursor ( XtDisplay ( w ), XC_watch );  
 

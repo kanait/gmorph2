@@ -246,8 +246,14 @@ int makerasterfont(ScreenAtr *screen, char *fontname)
   XFontStruct *fontInfo;
   Font  id;
   unsigned int first, last;
+  Display *dpy;
 
-  fontInfo = XLoadQueryFont(XtDisplay(screen->glw), fontname);
+  if (screen->x11_display != NULL)
+    dpy = (Display *) screen->x11_display;
+  else
+    dpy = XtDisplay(screen->glw);
+
+  fontInfo = XLoadQueryFont(dpy, fontname);
   if (fontInfo == NULL) {
     fprintf(stderr, "No font found.\n");
     return FAIL;

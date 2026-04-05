@@ -872,36 +872,35 @@ int gmh_ok( char *str )
   return SUCCEED;
 }
 
-void makegmorphcb( Widget w, XtPointer cld, XtPointer *cad )
+void gmorph_compute_morph(void)
 {
   Sppd *ppdgmorph_v2( HPpd * );
   void clear_gmorph( HPpd * );
-  void DisplayBusyCursor ( Widget w );
 
   if ( swin->hppd == (HPpd *) NULL ) {
     displayinfo("can't execute gmorph.\n");
     return;
   }
-  
+
   if ( swin->morph_ppd != (Sppd *) NULL ) {
     clear_gmorph( swin->hppd );
     swin->morph_ppd = (Sppd *) NULL;
   }
 
-  DisplayBusyCursor ( w );
-  
   if ( (swin->morph_ppd = ppdgmorph_v2( swin->hppd )) == (Sppd *) NULL ) {
     displayinfo("can't execute gmorph.\n");
     return;
   }
 
-/*  swin->screenatr[0].current_ppd = swin->morph_ppd;
-  swin->screenatr[0].view_ppd = swin->morph_ppd;
-  swin->screenatr[1].current_ppd = (Sppd *) NULL;
-  swin->screenatr[1].view_ppd = (Sppd *) NULL;
-*/
   displayinfo("gmorph succeedingly ended.\n");
-  
+}
+
+void makegmorphcb( Widget w, XtPointer cld, XtPointer *cad )
+{
+  void DisplayBusyCursor ( Widget w );
+
+  DisplayBusyCursor ( w );
+  gmorph_compute_morph();
 }
 
 

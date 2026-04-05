@@ -11,7 +11,7 @@ This code is provided **for research purposes only and without any support**.
 Originally, it was developed as code that runs on SGI workstations around 1997-1998.
 This code was created earlier than the [Windows version](https://github.com/kanait/gmorph); the Windows version was later developed based on this code.
 Recently, I updated the code to compile and run on Ubuntu 24.04, and fixed a few minor bugs that had been present since then.
-Compared with the original 1997-era code, the harmonic-map sparse solver has also been replaced from `linbcg` to an Eigen-based implementation for licensing reasons.
+Compared with the original 1997-era code, the harmonic-map sparse solver has also been replaced from `linbcg` to an Eigen-based BiCGSTAB implementation for licensing reasons.
 
 ## Compilation
 

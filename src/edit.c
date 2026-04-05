@@ -4,6 +4,7 @@
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
+#include "gmorph_qt_bridge.h"
 
 /* "Select" primivite functions */
 
@@ -593,14 +594,58 @@ void cancel_all( void )
   FreeSelectList( screen1 );
   FreeSelectList( screen2 );
 }
-  
+
+void gmorph_change_edit_type(int kind)
+{
+  int prev;
+  void screen_initialize_sgraph(ScreenAtr *);
+  void screen_exit_sgraph(ScreenAtr *);
+
+  prev = swin->edit_type;
+  cancel_all();
+  if (prev == EDIT_SPATH) {
+    screen_exit_sgraph(&(swin->screenatr[SCREEN1]));
+    screen_exit_sgraph(&(swin->screenatr[SCREEN2]));
+  }
+  swin->edit_type = kind;
+  if (swin->edit_type == EDIT_SPATH) {
+    screen_initialize_sgraph(&(swin->screenatr[SCREEN1]));
+    screen_initialize_sgraph(&(swin->screenatr[SCREEN2]));
+  }
+}
+
 #define SHOW_ONE  0
 #define SHOW_ALL  1
 
 void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
 {
-  int    i, x, y, dx, dy;
+  XEvent *e = cad->event;
+  int x, y;
+  unsigned int state, button;
+  int evtype;
+
+  (void) w;
+  evtype = (int) e->type;
+  if (e->type == MotionNotify) {
+    x = e->xmotion.x;
+    y = e->xmotion.y;
+    state = e->xmotion.state;
+    button = 0;
+  } else {
+    x = e->xbutton.x;
+    y = e->xbutton.y;
+    state = e->xbutton.state;
+    button = e->xbutton.button;
+  }
+  gmorph_gl_pointer_event((int) cld, evtype, button, state, x, y);
+}
+
+void gmorph_gl_pointer_event(int i, int event_type, unsigned int button,
+			     unsigned int state, int x, int y)
+{
+  int    dx, dy;
   int    drawflag;
+  int    camera_changed;
   Vec2d  xvec, ovec, nvec;
   double oangle, nangle, angle;
   ScreenAtr *screen;
@@ -635,17 +680,15 @@ void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
   void   make_loop( ScreenAtr * );
   void   cancel_make_loop( ScreenAtr * );
   void   cancel_edit_sp_vertex( void );
-  
-  i = (int) cld;
+
   screen = &(swin->screenatr[i]);
 
   drawflag = SHOW_ONE;
-  switch( cad->event->type ) {
+  camera_changed = SMD_OFF;
+  switch( event_type ) {
   case ButtonPress:
-    cur_button = cad->event->xbutton.button;
-    cur_modify = cad->event->xbutton.state;
-    x = cad->event->xbutton.x;
-    y = cad->event->xbutton.y;
+    cur_button = button;
+    cur_modify = state;
     scrn_x = x; scrn_y = y;
     if (cur_modify & ShiftMask) {
       if (cur_button == Button1) {
@@ -813,6 +856,10 @@ void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
  case ButtonRelease:
     finish_screen3d_rotate(screen);
     finish_screen3d_zoom(screen);
+    if ((cur_modify & ShiftMask) != 0 ||
+	(((cur_modify & ControlMask) != 0) && cur_button == Button1)) {
+      camera_changed = SMD_ON;
+    }
     if (cur_modify & ShiftMask) { 
     } else {
       if (cur_button == Button1) {
@@ -838,15 +885,15 @@ void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
     cur_button = 0;
     break;
  case MotionNotify:
-    x = cad->event->xbutton.x;
-    y = cad->event->xbutton.y;
     dx = x - scrn_x;
     dy = y - scrn_y;
     if (cur_modify & ShiftMask) { 
       if (cur_button == Button1) { /* rotate */
 	update_screen3d_rotate(screen, dx, dy);
+	camera_changed = SMD_ON;
       } else if (cur_button == Button2) { /* zoom */
 	update_screen3d_zoom(screen, dx, dy);
+	camera_changed = SMD_ON;
       } 
     } else if (cur_modify & ControlMask) {
       if (cur_button == Button1) {
@@ -858,6 +905,7 @@ void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
 	angle  = 180.0 * acos(V2Cosign(&(nvec), &(ovec))) / SMDPI;
 	if (V2Sign(&(nvec), &(ovec)) < 0.0) angle *= -1.0;
 	update_screen3d_rotate_z(screen, (double) angle);
+	camera_changed = SMD_ON;
       }
     } else {
       if (cur_button == Button1) {
@@ -885,8 +933,17 @@ void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
 
   }
 
+  if (swin->use_qt_gui && swin->qt_sync_views == SMD_ON && camera_changed == SMD_ON) {
+    int other = (i == SCREEN1) ? SCREEN2 : SCREEN1;
+    gqt_copy_3d_camera(&swin->screenatr[other], screen);
+  }
+
   if ( drawflag != SHOW_ALL ) {
     drawwindow( i );
+    if (swin->use_qt_gui && swin->qt_sync_views == SMD_ON && camera_changed == SMD_ON) {
+      int other = (i == SCREEN1) ? SCREEN2 : SCREEN1;
+      drawwindow( other );
+    }
   } else {
     drawwindow( SCREEN1 );
     drawwindow( SCREEN2 );

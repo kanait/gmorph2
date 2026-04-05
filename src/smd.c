@@ -16,6 +16,12 @@ Swin *create_swin( void )
 
   swin = (Swin *) malloc( sizeof(Swin) );
 
+  swin->use_qt_gui = 0;
+  swin->qt_in_paint_gl = 0;
+  swin->qt_sync_views = SMD_OFF;
+  swin->toplevel   = NULL;
+  swin->apc        = NULL;
+
   display3d_initialize( &(swin->dis3d) );
   for (i = 0; i < 2; ++i) {
     screenatr_initialize( &(swin->screenatr[i]) );
@@ -78,6 +84,7 @@ void screenatr_initialize(ScreenAtr *screen)
   screen->vi     = NULL;
   screen->xc     = NULL;
   screen->glx_fbc = NULL;
+  screen->x11_display = NULL;
   
   /* resize or not */
   screen->resize = SMD_OFF;

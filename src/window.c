@@ -695,7 +695,7 @@ void createwindisp3d( Widget parent )
   XtAddCallback(pb, XmNarmCallback, (XtCallbackProc) settilenocb, NULL);
 }
 
-static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
+void gmorph_play_morph_animation(void)
 {
   int    a, i;
   Spvt   *v;
@@ -709,14 +709,16 @@ static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
   void   calc_fnorm(Spfc *);
   void   ppdnorm( Sppd * );
   int    saveRgbImage( char *, long, long );
-  
+
   if ( swin->morph_ppd != (Sppd *) NULL ) {
     /* reset */
     swin->screenatr[0].view_ppd = (Sppd *) NULL;
     swin->screenatr[1].view_ppd = (Sppd *) NULL;
     drawwindow( SCREEN1 );
     drawwindow( SCREEN2 );
-    
+    if ( swin->use_qt_gui )
+      gmorph_qt_process_events();
+
     ppd = swin->screenatr[0].view_ppd = swin->morph_ppd;
     div = swin->mdiv - 1;
     if ( div < 1 ) div = 1;
@@ -738,21 +740,31 @@ static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
 	if ( swin->smooth_shading ) {
 	  ppdnorm( ppd );
 	}
-	drawwindow( SCREEN1 );
-	usleep(MORPH_FRAME_USEC);
-	if ( swin->saveimg ) {
+		drawwindow( SCREEN1 );
+		if ( swin->use_qt_gui )
+		  gmorph_qt_process_events();
+		usleep(MORPH_FRAME_USEC);
+		if ( swin->saveimg ) {
 	  sprintf( file, "mymorph_%03d.sgi", a );
 	  (void) saveRgbImage( file,
 			       swin->screenatr[0].width - 1,
 			       swin->screenatr[0].height - 1 );
-			  
+
 	}
       }
     }
   }
 }
 
-static void gmorphorgmeshcb(Widget w, XtPointer cld, XtPointer *cad)
+static void gmorphcb( Widget w, XtPointer cld, XtPointer *cad )
+{
+  (void) w;
+  (void) cld;
+  (void) cad;
+  gmorph_play_morph_animation();
+}
+
+void gmorph_view_original_meshes(void)
 {
   void  drawwindow(int);
 
@@ -761,11 +773,19 @@ static void gmorphorgmeshcb(Widget w, XtPointer cld, XtPointer *cad)
 
   drawwindow( SCREEN1 );
   drawwindow( SCREEN2 );
-  
+
   swin->view_attribs = VIEW_ORGMESH;
 }
 
-static void gmorphresetcb(Widget w, XtPointer cld, XtPointer *cad)
+static void gmorphorgmeshcb(Widget w, XtPointer cld, XtPointer *cad)
+{
+  (void) w;
+  (void) cld;
+  (void) cad;
+  gmorph_view_original_meshes();
+}
+
+void gmorph_reset_morph_view(void)
 {
   Sppd  *ppd;
   Spvt  *v;
@@ -777,7 +797,7 @@ static void gmorphresetcb(Widget w, XtPointer cld, XtPointer *cad)
 
   if ( swin->hppd == NULL ) return;
   if ( swin->morph_ppd == NULL ) return;
-  
+
   ppd = swin->screenatr[0].view_ppd = swin->morph_ppd;
   swin->screenatr[1].view_ppd = (Sppd *) NULL;
 
@@ -793,11 +813,19 @@ static void gmorphresetcb(Widget w, XtPointer cld, XtPointer *cad)
   if ( swin->smooth_shading ) {
     ppdnorm( ppd );
   }
-  
+
   drawwindow( SCREEN1 );
   drawwindow( SCREEN2 );
 
   swin->view_attribs = VIEW_INTPMESH;
+}
+
+static void gmorphresetcb(Widget w, XtPointer cld, XtPointer *cad)
+{
+  (void) w;
+  (void) cld;
+  (void) cad;
+  gmorph_reset_morph_view();
 }
 
 /* morph division number */
@@ -865,30 +893,15 @@ static Widget edit_tb[EDIT_NONE];
 
 static void change_editcb( Widget w, XtPointer cld, XmToggleButtonCallbackStruct *cad )
 {
-  int  i;
-  void cancel_all( void );
-  void screen_initialize_sgraph( ScreenAtr * );
-  void screen_exit_sgraph( ScreenAtr * );
+  int i;
 
+  (void) w;
+  (void) cad;
   i = swin->edit_type;
-  if ( i != EDIT_NONE ) {
-    XmToggleButtonSetState( edit_tb[i], False, False );
-  }    
+  if (i != EDIT_NONE)
+    XmToggleButtonSetState(edit_tb[i], False, False);
 
-  cancel_all();
-  
-  if ( i == EDIT_SPATH ) {
-    screen_exit_sgraph( &(swin->screenatr[SCREEN1]) );
-    screen_exit_sgraph( &(swin->screenatr[SCREEN2]) );
-  }
-  swin->edit_type  = EDIT_NONE;
-  
-  swin->edit_type = (int) cld;
-
-  if ( swin->edit_type == EDIT_SPATH ) {
-    screen_initialize_sgraph( &(swin->screenatr[SCREEN1]) );
-    screen_initialize_sgraph( &(swin->screenatr[SCREEN2]) );
-  }
+  gmorph_change_edit_type((int) cld);
 }
 
 Widget CreateXpmEditToggleButton( Widget parent, int kind, char **icon_data )
@@ -1163,10 +1176,14 @@ void set_windowtitle(char *str)
   int n;
   char title[BUFSIZ];
   Arg args[1];
-  
-  n = 0;
-  
+
   sprintf( title, "%s: %s", versionshort, str );
+  if ( swin->use_qt_gui ) {
+    gmorph_qt_set_window_title( title );
+    return;
+  }
+
+  n = 0;
   XtSetArg( args[n], XmNtitle, title );  n++;
   XtSetValues( swin->toplevel, args, n );
 }

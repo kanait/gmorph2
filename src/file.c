@@ -1,6 +1,7 @@
 /* Copyright (c) 1997 Takashi Kanai; All rights reserved. */
 
 #include "cinc.h"
+#include <string.h>
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
@@ -204,14 +205,12 @@ void file_save_initcb(Widget w, XtPointer cld, XtPointer *cad)
   XmStringFree(text2);
 }
 
-void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
+void gmorph_file_dialog_ok(const char *path)
 {
-  Widget   TextW;
-  char  *str, tstr[BUFSIZ];
+  char  full[BUFSIZ];
   int   ppd_ok(char *, int);
   int   gmh_ok(char *);
   int   gppd_ok( char * );
-  void  find_fileheader( char *, char * );
   void  drawwindow(int);
   void  calc_fnorm(Spfc *);
   void  ppdnorm(Sppd *);
@@ -221,18 +220,18 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
   Sppd *ppd;
   Vec  *mvec1;
 
-  TextW = (Widget) XmFileSelectionBoxGetChild(w, XmDIALOG_TEXT);
-  str = (char *) XmTextGetString(TextW);
-  XtUnmanageChild( filesel );
-  find_fileheader( str, (char *) tstr );
+  if (path == NULL)
+    return;
+  strncpy(full, path, BUFSIZ - 1);
+  full[BUFSIZ - 1] = '\0';
 
   redraw = (swin->opend == SMDOPEN);
   if (swin->filed == SMDFILEPPD1)
-    ppd_ok(tstr, 0);
+    ppd_ok(full, 0);
   else if (swin->filed == SMDFILEPPD2)
-    ppd_ok(tstr, 1);
+    ppd_ok(full, 1);
   else if (swin->filed == SMDFILEGPPD)
-    if ( gppd_ok(tstr) == SMD_ON ) {
+    if ( gppd_ok(full) == SMD_ON ) {
       /* Show only left window immediately. */
       swin->screenatr[0].view_ppd = swin->morph_ppd;
       swin->screenatr[1].view_ppd = (Sppd *) NULL;
@@ -258,16 +257,25 @@ void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
       redraw = 0;
     }
   else if (swin->filed == SMDFILEGMH) {
-    if (gmh_ok(tstr) != SUCCEED)
+    if (gmh_ok(full) != SUCCEED)
       redraw = 0;
   }
 
-  /* Closing the dialog may not trigger a GLw Expose, so redraw immediately. */
   if (redraw) {
     drawwindow(SCREEN1);
     drawwindow(SCREEN2);
   }
+}
 
+void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
+{
+  Widget   TextW;
+  char  *str;
+
+  TextW = (Widget) XmFileSelectionBoxGetChild(w, XmDIALOG_TEXT);
+  str = (char *) XmTextGetString(TextW);
+  XtUnmanageChild( filesel );
+  gmorph_file_dialog_ok(str);
   XtFree(str);
 }
 

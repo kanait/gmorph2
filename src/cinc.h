@@ -3,7 +3,9 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(__linux__)
 #include <malloc.h>
+#endif
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>

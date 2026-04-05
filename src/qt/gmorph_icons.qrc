@@ -1,0 +1,29 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/gmorph">
+    <file>icons/edit_create_ppdloop_32.png</file>
+    <file>icons/edit_create_ppdloop_96.png</file>
+    <file>icons/edit_delete_ppdloop_32.png</file>
+    <file>icons/edit_delete_ppdloop_96.png</file>
+    <file>icons/edit_create_ppdface_32.png</file>
+    <file>icons/edit_create_ppdface_96.png</file>
+    <file>icons/edit_delete_ppdface_32.png</file>
+    <file>icons/edit_delete_ppdface_96.png</file>
+    <file>icons/edit_create_cvp_32.png</file>
+    <file>icons/edit_create_cvp_96.png</file>
+    <file>icons/edit_move_cvp_32.png</file>
+    <file>icons/edit_move_cvp_96.png</file>
+    <file>icons/edit_delete_cvp_32.png</file>
+    <file>icons/edit_delete_cvp_96.png</file>
+    <file>icons/edit_create_pcm_face_32.png</file>
+    <file>icons/edit_create_pcm_face_96.png</file>
+    <file>icons/edit_delete_pcm_face_32.png</file>
+    <file>icons/edit_delete_pcm_face_96.png</file>
+    <file>icons/edit_make_shortestpath_32.png</file>
+    <file>icons/edit_make_shortestpath_96.png</file>
+    <file>icons/edit_delete_shortestpath_32.png</file>
+    <file>icons/edit_delete_shortestpath_96.png</file>
+    <file>icons/edit_manu_shortestpath_32.png</file>
+    <file>icons/edit_manu_shortestpath_96.png</file>
+  </qresource>
+</RCC>

@@ -22,7 +22,7 @@ void init_gl3d(ScreenAtr *screen)
   int   light_init(Light *);
   void  definelinestyle(void);
 
-  {
+  if (!swin->use_qt_gui) {
     Display *dpy = XtDisplay(screen->glw);
 
     /* Use the visual chosen in create3dwinpane; XtGetValues can be unreliable for some GLw builds. */
@@ -72,7 +72,11 @@ void init_gl3d(ScreenAtr *screen)
 
 /*   glEnable( GL_AUTO_NORMAL ); */
   
-  (void) makerasterfont(screen, "-adobe-times-medium-i-normal--14-*");
+  if (!swin->use_qt_gui || screen->x11_display != NULL) {
+    (void) makerasterfont(screen, "-adobe-times-medium-i-normal--14-*");
+  } else {
+    screen->fontOffset = 0;
+  }
   (void) light_init(&(screen->light));
 
   definelinestyle();
@@ -137,8 +141,10 @@ int light_init(Light *light)
 
 void clear_gl3d(ScreenAtr *screen)
 {
-  glXMakeCurrent(XtDisplay(screen->glw), XtWindow(screen->glw),
-		 screen->xc);
+  if (!swin->use_qt_gui) {
+    glXMakeCurrent(XtDisplay(screen->glw), XtWindow(screen->glw),
+		   screen->xc);
+  }
   glClearColor((GLfloat) screen->bgrgb[0],
 	       (GLfloat) screen->bgrgb[1],
 	       (GLfloat) screen->bgrgb[2],
@@ -824,11 +830,17 @@ void drawwindow(int i)
   ScreenAtr *screen;
   
   screen = &(swin->screenatr[i]);
+  if (swin->use_qt_gui)
+    gmorph_qt_make_gl_current(i);
   clear_gl3d(screen);
   view_init(screen);
   draws3d(screen);
-  glXSwapBuffers(XtDisplay(screen->glw), XtWindow(screen->glw));
+  if (!swin->use_qt_gui) {
+    glXSwapBuffers(XtDisplay(screen->glw), XtWindow(screen->glw));
+  }
   glFlush();
+  if (swin->use_qt_gui && !swin->qt_in_paint_gl)
+    gmorph_qt_request_update(i);
   glPopMatrix();
   return;
 }

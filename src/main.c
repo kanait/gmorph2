@@ -1,40 +1,10 @@
 /* Copyright (c) 1997 Takashi Kanai; All rights reserved. */
 
 #include "cinc.h"
+#include <string.h>
 #include "motif.h"
 #include "gldef.h"
 #include "smd.h"
-
-static String fres[] = {
-  /* fonts */
-  "*XmScrolledList*fontList:	-adobe-helvetica-bold-r-normal--12-*",
-  "*XmText*fontList:            -adobe-helvetica-bold-r-normal--12-*",
-  "*XmButton*fontList:          -adobe-helvetica-bold-r-normal--12-*",
-  "*XmLabel*fontList:           -adobe-times-*-r-normal--14-*",
-  "*XmPulldownMenu*fontList:    -adobe-helvetica-bold-r-normal--12-*",
-  "*XmCascadeButton*fontList:   -adobe-helvetica-bold-r-normal--12-*",
-  "*XmPushButton*fontList:	-adobe-helvetica-bold-r-normal--12-*",
-  "*XmPushButtonGadget*fontList: -adobe-helvetica-bold-r-normal--12-*",
-  "*XmList*fontList:		-adobe-helvetica-bold-r-normal--12-*",
-  "*XmScrolledList*fontList:	-adobe-helvetica-bold-r-normal--12-*",
-  "*XmToggleButton*fontList:	-adobe-helvetica-bold-r-normal--12-*",
-  /* miscs */
-  "*XmToggleButton*marginHeight: 0",
-  "*XmToggleButton*marginTop:	 0",
-  "*XmToggleButton*marginBottom: 0",
-  "*XmToggleButton*marginLeft:	0",
-  "*XmPushButton*marginHeight:	0",
-  "*XmPushButton*marginTop:	0",
-  "*XmPushButton*marginBottom:	0",
-  "*XmPushButton*marginLeft:	0",
-  "*XmPushButton*alignment:	ALIGNMENT_BEGINNING",
-  "*XmFrame*shadowType:		SHADOW_ETCHED_IN",
-  "*dialogStyle, 		DIALOG_FULL_APPLICATION_MODAL",
-  "*sgiMode:                    True",
-  "*useSchemes:			Colors",
-  "*useEnhancedFSB:		True",
-  NULL
-};
 
 static char version[] = {
   "GMorph Version 2.0 (beta release 8) Copyright 1997-1998 by Takashi Kanai."
@@ -46,10 +16,8 @@ Swin *swin;
 
 void main( int argc, char *argv[] )
 {
-  int    i, j, n, in;
-  Arg    args[10];
+  int    i, j, in;
   int    mdiv;
-  Widget progress;
   char   file[3][BUFSIZ], rec[BUFSIZ], gppdfile[BUFSIZ], inppdfile[2][BUFSIZ];
   char   ogmhfile[BUFSIZ];
   int    fileflag, guiflag, printflag, recflag, helpflag;
@@ -61,8 +29,6 @@ void main( int argc, char *argv[] )
   Sppd   *ppd1, *ppd2, *mppd;
   Swin *create_swin( void );
   void free_swin( Swin * );
-  void init_gl(void);
-  void initsubwindows(Widget);
   Sppd *open_ppd(char *);
   Sppd *ppdgmorph_v2( HPpd * );
   void free_ppd(Sppd *);
@@ -256,21 +222,10 @@ void main( int argc, char *argv[] )
     swin->morph_ppd = open_ppd( gppdfile );
   }
   
-  /* GUI open */
+  /* GUI open (Qt6; CLI keeps this translation unit as C main) */
   if ( guiflag ) {
-    n = 0;
-    XtSetArg(args[n], XmNtitle, version); ++n;
-
-    swin->toplevel = XtAppInitialize(&(swin->apc), "SMD", NULL, 0, &argc,
-				     argv, fres, (ArgList) args, n);
-    initsubwindows(swin->toplevel);
-
-    if ( fileflag ) {
-      set_windowtitle( file[0] );
-    }
-    
-    XtRealizeWidget(swin->toplevel);
-    XtAppMainLoop(swin->apc);
+    swin->use_qt_gui = 1;
+    gmorph_run_qt6_gui( argc, argv, fileflag ? file[0] : NULL );
   } else {
 
     if ( (gppdflag) && (recflag) ) {
