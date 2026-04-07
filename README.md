@@ -23,6 +23,14 @@ As of the current tree, the legacy **Motif / X11** UI has been removed from the 
 
 In addition to the default `gmorph2b8` target, CMake can build an extra executable **`gmorph2b8_cli`** (no Qt, no OpenGL) for batch processing only.
 
+**Why it exists:** `gmorph2b8` already runs in batch mode when you omit `-gui`, but that binary is still **linked against Qt 6 and OpenGL**. At runtime you therefore need the corresponding shared libraries (and a sane environment for Qt) even if you never open a window. **`gmorph2b8_cli` drops Qt and OpenGL entirely**, which helps when you want to:
+
+- deploy on **minimal servers or containers** where installing Qt is undesirable;
+- **build and test** the non-GUI code path without pulling in Qt/OpenGL dev packages;
+- avoid any **GUI stack initialization** (platform plugins, display-related edge cases) on headless systems.
+
+If you always build and run on a machine that already has Qt installed, you can ignore `gmorph2b8_cli` and use `gmorph2b8` for batch jobs.
+
 ## Compilation
 
 ### Ubuntu / Debian
