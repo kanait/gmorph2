@@ -15,7 +15,13 @@ Compared with the original 1997-era code, the harmonic-map sparse solver has als
 
 ## GUI: Qt 6 and `-gui`
 
-The interactive GUI is implemented with **Qt 6** (`Widgets`, `OpenGL`, `OpenGLWidgets`): run `gmorph2b8 -gui` to open the Qt main window and OpenGL views. The original **Motif / X11** sources are still compiled and linked into the same binary (shared data structures and callbacks), so you still need OpenMotif and X11 development packages at build time even if you only use the Qt interface. On the command line, morphing works without displaying a Qt window.
+The interactive GUI is implemented with **Qt 6** (`Widgets`, `OpenGL`, `OpenGLWidgets`): run `gmorph2b8 -gui` to open the Qt main window and OpenGL views.
+
+As of the current tree, the legacy **Motif / X11** UI has been removed from the build: **you do not need OpenMotif or X11 development packages** to compile or run the Qt GUI.
+
+## CLI-only target: `gmorph2b8_cli`
+
+In addition to the default `gmorph2b8` target, CMake can build an extra executable **`gmorph2b8_cli`** (no Qt, no OpenGL) for batch processing only.
 
 ## Compilation
 
@@ -23,32 +29,36 @@ The interactive GUI is implemented with **Qt 6** (`Widgets`, `OpenGL`, `OpenGLWi
 
 To compile the code, install the following libraries (via `apt`):
 
-- libmotif-dev
-- libgl1-mesa-dev
-- libglu1-mesa-dev
-- libglw1-mesa-dev
-- libeigen3-dev
-- libxpm-dev
+- cmake
+- a C/C++ toolchain (`build-essential`)
+- Qt 6 development packages (at least `qt6-base-dev`; OpenGL modules may be packaged separately depending on distro)
+- OpenGL + GLU development packages (`libgl1-mesa-dev`, `libglu1-mesa-dev`)
+- Eigen (`libeigen3-dev`)
 
-You may also need additional libraries required by the packages above (for example: `libx11-dev`, `libxext-dev`, `libxt-dev`, `libxi-dev`, `libsm-dev`, `libice-dev`).
+Example:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  build-essential cmake \
+  qt6-base-dev \
+  libgl1-mesa-dev libglu1-mesa-dev \
+  libeigen3-dev
+```
 
 ### macOS (Homebrew)
 
-On a Mac, install **X11 client libraries**, **OpenMotif**, **XQuartz** (for X11 headers/libraries, `GLw`, and a `libGL` that exposes **GLX** — Apple’s `OpenGL.framework` does not provide `glX*`, which this tree still uses from the legacy GL code path), plus **Qt 6** and **Eigen** for the current build:
+On a Mac, install **Qt 6**, **Eigen**, and **CMake**:
 
 ```bash
-brew install libx11 libxext libxt libxi libsm libice libxpm openmotif
-brew install qt eigen
-brew install --cask xquartz
+brew install cmake qt eigen
 ```
 
-After installing the XQuartz cask, complete its installer if prompted; a **logout/login** (or reboot) is often needed before `/opt/X11` and the X11 environment are picked up reliably. Ensure `pkg-config` can see the `.pc` files (CMake prepends common paths such as `/opt/homebrew/lib/pkgconfig` or `/usr/local/lib/pkgconfig` and `/opt/X11/lib/pkgconfig`, depending on your machine).
-
-If `libGL` with GLX is not found, install Mesa as an alternative to satisfy linking: `brew install mesa` (see the CMake configuration messages).
+XQuartz / OpenMotif are **not required** for the current Qt GUI build.
 
 ### Build with CMake
 
-To create the executable **gmorph2b8**:
+To create the executable **gmorph2b8** (Qt GUI + CLI):
 
 ```bash
 mkdir build
@@ -58,6 +68,13 @@ cmake --build .
 ```
 
 (On Linux you can use `make` instead of `cmake --build .` if you use the default Makefile generator.)
+
+To also build the CLI-only executable **gmorph2b8_cli**:
+
+```bash
+cmake -S . -B build -DGMORPH_BUILD_CLI_ONLY_TARGET=ON
+cmake --build build
+```
 
 ## Usage
 
@@ -81,7 +98,7 @@ Basic CLI syntax:
 `gmorph2b8 [options] <in.gmh> <out.ppd>`
 
 This will generate the PPD file.
-To start the GUI, use the following command. Note that the GUI requires an X11/GLX environment (an active X server).
+To start the GUI, use the following command:
 
 ```bash
 ../../build/gmorph2b8 -gui
@@ -94,17 +111,18 @@ This will start the GUI.
 </p>
 
 ### Command-line options (selected)
-* `-div <n>`: morphing division number (default: 100; also affects the animation smoothness in GUI mode).
-* `-smooth`: enable smooth shading.
-* `-enh_disp`: enable enhanced display mode.
-* `-rec <name>`: record morphing meshes as Wavefront OBJ files like `<name>001.obj`, `<name>002.obj`, ... (frame count follows `-div`).
-* `-mphtosgi`: save morphing results to SGI image files.
-* `-spath <sublength> <out.gmh>`: make shortest-path mode graph (CLI-only).
+
+- `-div <n>`: morphing division number (default: 100; also affects the animation smoothness in GUI mode).
+- `-smooth`: enable smooth shading.
+- `-enh_disp`: enable enhanced display mode.
+- `-rec <name>`: record morphing meshes as Wavefront OBJ files like `<name>001.obj`, `<name>002.obj`, ... (frame count follows `-div`).
+- `-mphtosgi`: save morphing results to SGI image files.
+- `-spath <sublength> <out.gmh>`: make shortest-path mode graph (CLI-only).
 
 ## Authors
 
-* **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** - The University of Tokyo
+- **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** - The University of Tokyo
 
 ## License
 
-This software is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This software is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
