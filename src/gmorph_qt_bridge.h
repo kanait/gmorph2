@@ -7,8 +7,6 @@
 extern "C" {
 #endif
 
-void gmorph_qt_bridge_init_font_display(void);
-void gmorph_qt_bridge_bind_screen_display(int screen_idx);
 void gmorph_qt_bridge_set_screen_geom(int screen_idx, int w, int h);
 void gmorph_qt_bridge_init_gl_screen(int screen_idx);
 void gqt_set_file_context(int filed, int opend);

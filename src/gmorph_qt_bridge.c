@@ -4,27 +4,11 @@
 #include "smd.h"
 #include "gmorph_qt_bridge.h"
 
-#include <X11/Xlib.h>
 #include <string.h>
 
 void init_gl3d(ScreenAtr *);
 void update_screen3d_zoom(ScreenAtr *, int, int);
 void finish_screen3d_zoom(ScreenAtr *);
-
-static Display *font_display;
-
-void gmorph_qt_bridge_init_font_display(void)
-{
-  if (font_display == NULL)
-    font_display = XOpenDisplay(NULL);
-}
-
-void gmorph_qt_bridge_bind_screen_display(int screen_idx)
-{
-  if (screen_idx < 0 || screen_idx > 1)
-    return;
-  swin->screenatr[screen_idx].x11_display = (void *) font_display;
-}
 
 void gmorph_qt_bridge_init_gl_screen(int screen_idx)
 {

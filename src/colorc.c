@@ -3,7 +3,6 @@
 #include "cinc.h"
 #include "motif.h"
 #include "gldef.h"
-#include "window.h"
 #include "smd.h"
 
 /* #include <Xm/Form.h> */

@@ -1,25 +1,21 @@
 /* Copyright 1997 by Takashi KANAI */
-#include <X11/Intrinsic.h>
-#include <X11/StringDefs.h>
-#include <X11/keysym.h>
-#include <X11/cursorfont.h>
-#include <Xm/Xm.h>
-#include <Xm/MainW.h>
-#include <Xm/ArrowB.h>
-#include <Xm/BulletinB.h>
-#include <Xm/CascadeB.h>
-#include <Xm/Command.h>
-#include <Xm/FileSB.h>
-#include <Xm/Form.h>
-#include <Xm/Frame.h>
-#include <Xm/PushB.h>
-#include <Xm/PushBG.h>
-#include <Xm/List.h>
-#include <Xm/Label.h>
-#include <Xm/MessageB.h>
-#include <Xm/RowColumn.h>
-#include <Xm/Scale.h>
-#include <Xm/ScrollBar.h>
-#include <Xm/Separator.h>
-#include <Xm/ToggleB.h>
-#include <Xm/Text.h>
+/*
+ * Legacy OpenMotif/X11 UI has been removed; Qt6 + batch CLI only.
+ * Opaque placeholders keep legacy callback signatures compilable where still referenced.
+ */
+typedef void *Widget;
+typedef void *XtAppContext;
+typedef void *XtPointer;
+typedef int Boolean;
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef True
+#define True 1
+#endif
+#ifndef False
+#define False 0
+#endif

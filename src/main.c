@@ -14,7 +14,7 @@ char versionshort[] = "GMorph Version 2.0b8";
 
 Swin *swin;
 
-void main( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   int    i, j, in;
   int    mdiv;
@@ -283,4 +283,7 @@ void main( int argc, char *argv[] )
     free_swin( swin );
     
   }
+
+  return 0;
 }
+

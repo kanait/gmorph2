@@ -145,66 +145,6 @@ void dummy(void)
 {
 }
 
-/***********************  file  ***************************/
-
-static char *(filetxt1[]) = {
-  "Ppd  File Select",
-  "Ppd  File Select",
-  "Gmh  File Select"
-};
-
-static char *(filetxt2[]) = {
-  "*.ppd",
-  "*.ppd",
-  "*.gmh"
-};
-
-static Widget filesel;
-
-/* file selection box open (for reading file) */
-
-void file_open_initcb( Widget w, XtPointer cld, XtPointer *cad )
-{
-  int   i, n;
-  Arg   args[5];
-  XmString  text1, text2;
-
-  i = swin->filed = (int) cld;
-  swin->opend = SMDOPEN;
-  text1 = (XmString) XmStringCreate(filetxt1[i], XmSTRING_DEFAULT_CHARSET);
-  text2 = (XmString) XmStringCreate(filetxt2[i], XmSTRING_DEFAULT_CHARSET);
-  n = 0;
-  XtSetArg(args[n], XmNfilterLabelString, text1);
-  n++;
-  XtSetArg(args[n], XmNdirMask, text2);
-  n++;
-  XtSetValues(filesel, args, 2);
-  XtManageChild(filesel);
-  XmStringFree(text1);
-  XmStringFree(text2);
-}
-
-void file_save_initcb(Widget w, XtPointer cld, XtPointer *cad)
-{
-  int   i, n;
-  Arg   args[5];
-  XmString  text1, text2;
-
-  i = swin->filed = (int) cld;
-  swin->opend = SMDSAVE;
-  text1 = (XmString) XmStringCreate(filetxt1[i], XmSTRING_DEFAULT_CHARSET);
-  text2 = (XmString) XmStringCreate(filetxt2[i], XmSTRING_DEFAULT_CHARSET);
-  n = 0;
-  XtSetArg(args[n], XmNfilterLabelString, text1);
-  n++;
-  XtSetArg(args[n], XmNdirMask, text2);
-  n++;
-  XtSetValues(filesel, args, 2);
-  XtManageChild(filesel);
-  XmStringFree(text1);
-  XmStringFree(text2);
-}
-
 void gmorph_file_dialog_ok(const char *path)
 {
   char  full[BUFSIZ];
@@ -266,34 +206,4 @@ void gmorph_file_dialog_ok(const char *path)
     drawwindow(SCREEN2);
   }
 }
-
-void fileokcb(Widget w, XtPointer cld, XtPointer *cad)
-{
-  Widget   TextW;
-  char  *str;
-
-  TextW = (Widget) XmFileSelectionBoxGetChild(w, XmDIALOG_TEXT);
-  str = (char *) XmTextGetString(TextW);
-  XtUnmanageChild( filesel );
-  gmorph_file_dialog_ok(str);
-  XtFree(str);
-}
-
-void filecnclcb(Widget w, XtPointer cld, XtPointer *cad)
-{
-  XtUnmanageChild(filesel);
-}
-
-void createfileserver(Widget parent)
-{
-  int   n;
-  Arg   args[20];
-  
-  n = 0;
-  XtSetArg(args[n], XmNdialogStyle, XmDIALOG_FULL_APPLICATION_MODAL); ++n;
-  filesel = (Widget) XmCreateFileSelectionDialog(parent, "winfilesel", args, n);
-  XtAddCallback(filesel, XmNokCallback, (XtCallbackProc) fileokcb, NULL);
-  XtAddCallback(filesel, XmNcancelCallback, (XtCallbackProc) filecnclcb, NULL);
-}
-
 

@@ -19,8 +19,6 @@ Swin *create_swin( void )
   swin->use_qt_gui = 0;
   swin->qt_in_paint_gl = 0;
   swin->qt_sync_views = SMD_OFF;
-  swin->toplevel   = NULL;
-  swin->apc        = NULL;
 
   display3d_initialize( &(swin->dis3d) );
   for (i = 0; i < 2; ++i) {
@@ -77,15 +75,7 @@ void screenatr_initialize(ScreenAtr *screen)
 
   screen->xcenter = (double) screen->width  / 2.0;
   screen->ycenter = (double) screen->height / 2.0;
-  
-  /* GLX window */
-  screen->glw    = NULL;
-  screen->fr3d   = NULL;
-  screen->vi     = NULL;
-  screen->xc     = NULL;
-  screen->glx_fbc = NULL;
-  screen->x11_display = NULL;
-  
+
   /* resize or not */
   screen->resize = SMD_OFF;
 
@@ -119,7 +109,9 @@ void screenatr_initialize(ScreenAtr *screen)
 
   /* set view initialize */
 
+#if GMORPH_ENABLE_RENDERING
   set_default_view(screen);
+#endif
   
   /* for select area */
   screen->areaflag  = SMD_OFF;

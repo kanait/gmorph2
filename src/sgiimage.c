@@ -322,7 +322,7 @@ unsigned long *longimagedata(char *name)
 			cur = starttab[y+z*ysize];
 		    }
 		    if(lengthtab[y+z*ysize]>rlebuflen) {
-			fprintf(stderr,"longimagedata: rlebuf(%d) is too small - bad poop : %d\n"
+			fprintf(stderr,"longimagedata: rlebuf(%d) is too small - bad poop : %lu\n"
 			,rlebuflen, lengthtab[y+z*ysize]);
 			exit(1);
 		    }

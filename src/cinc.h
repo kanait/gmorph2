@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <assert.h>
+#include <string.h>
 
 /* Small safety helpers.
  * - XMALLOC: aborts on OOM instead of returning NULL.

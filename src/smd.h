@@ -2,6 +2,9 @@
 
 typedef	int Id;
 
+/* Phase 3: Material/Light are defined without OpenGL headers when rendering is disabled. */
+#include "render_types.h"
+
 /* fundermental items list */
 
 typedef struct _vec {
@@ -1161,13 +1164,6 @@ typedef struct _screenatr {
   int            no;
   int            type;                    /* screen type (2D, 3D) */
   int            resize;
-  Widget         glw;
-  XVisualInfo    *vi;
-  GLXContext     xc;
-  void           *glx_fbc;       /* GLXFBConfig from glXChooseFBConfig, else NULL */
-  Widget         fr3d;
-  /* Qt GUI: native X11 Display for glXUseXFont when glw is NULL */
-  void           *x11_display;
 
   /* width, height */
   int            width;
@@ -1246,9 +1242,7 @@ typedef struct _display3d {
 typedef struct _swin {
 
   /* global */
-  Widget         toplevel;
-  XtAppContext   apc;
-  int            use_qt_gui;     /* 1: Qt6 event loop + QOpenGLWidget (no Motif shell) */
+  int            use_qt_gui;     /* 1: Qt6 event loop + QOpenGLWidget */
   int            qt_in_paint_gl; /* suppress redundant QWidget::update during paintGL */
   int            qt_sync_views;  /* Qt: mirror 3D camera (rotate/zoom) between left/right */
 

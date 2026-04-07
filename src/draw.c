@@ -22,29 +22,6 @@ void init_gl3d(ScreenAtr *screen)
   int   light_init(Light *);
   void  definelinestyle(void);
 
-  if (!swin->use_qt_gui) {
-    Display *dpy = XtDisplay(screen->glw);
-
-    /* Use the visual chosen in create3dwinpane; XtGetValues can be unreliable for some GLw builds. */
-    if (!screen->vi) {
-      fprintf(stderr, "gmorph2b8: missing GLX visual (init_gl3d).\n");
-      exit(1);
-    }
-    if (screen->xc)
-      glXDestroyContext(dpy, screen->xc);
-    if (screen->glx_fbc)
-      screen->xc = glXCreateNewContext(dpy, (GLXFBConfig) screen->glx_fbc,
-					 GLX_RGBA_TYPE, None, True);
-    else
-      screen->xc = glXCreateContext(dpy, screen->vi, None, True);
-    if (!screen->xc) {
-      fprintf(stderr,
-	      "gmorph2b8: glXCreateNewContext/glXCreateContext failed (init_gl3d).\n");
-      exit(1);
-    }
-    GLwDrawingAreaMakeCurrent(screen->glw, screen->xc);
-  }
-
   screen->light = default_light;
 
   if ( swin->smooth_shading ) {
@@ -72,7 +49,7 @@ void init_gl3d(ScreenAtr *screen)
 
 /*   glEnable( GL_AUTO_NORMAL ); */
   
-  if (!swin->use_qt_gui || screen->x11_display != NULL) {
+  if (!swin->use_qt_gui) {
     (void) makerasterfont(screen, "-adobe-times-medium-i-normal--14-*");
   } else {
     screen->fontOffset = 0;
@@ -141,10 +118,6 @@ int light_init(Light *light)
 
 void clear_gl3d(ScreenAtr *screen)
 {
-  if (!swin->use_qt_gui) {
-    glXMakeCurrent(XtDisplay(screen->glw), XtWindow(screen->glw),
-		   screen->xc);
-  }
   glClearColor((GLfloat) screen->bgrgb[0],
 	       (GLfloat) screen->bgrgb[1],
 	       (GLfloat) screen->bgrgb[2],
@@ -835,9 +808,6 @@ void drawwindow(int i)
   clear_gl3d(screen);
   view_init(screen);
   draws3d(screen);
-  if (!swin->use_qt_gui) {
-    glXSwapBuffers(XtDisplay(screen->glw), XtWindow(screen->glw));
-  }
   glFlush();
   if (swin->use_qt_gui && !swin->qt_in_paint_gl)
     gmorph_qt_request_update(i);

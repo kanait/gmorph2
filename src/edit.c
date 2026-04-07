@@ -8,6 +8,21 @@
 
 /* "Select" primivite functions */
 
+/* Event/mask constants (same numeric values as X11; used by Qt bridge). */
+enum {
+  ButtonPress = 4,
+  ButtonRelease = 5,
+  MotionNotify = 6,
+  Button1 = 1,
+  Button2 = 2,
+  Button3 = 3,
+  ShiftMask = 1 << 0,
+  ControlMask = 1 << 2,
+  Button1Mask = 1 << 8,
+  Button2Mask = 1 << 9,
+  Button3Mask = 1 << 10,
+};
+
 static void make_area(int x, int y, ScreenAtr *screen)
 {
   screen->areaatv.x = (double) x;
@@ -616,29 +631,6 @@ void gmorph_change_edit_type(int kind)
 
 #define SHOW_ONE  0
 #define SHOW_ALL  1
-
-void inputwindow3dcb(Widget w, XtPointer cld, GLwDrawingAreaCallbackStruct *cad)
-{
-  XEvent *e = cad->event;
-  int x, y;
-  unsigned int state, button;
-  int evtype;
-
-  (void) w;
-  evtype = (int) e->type;
-  if (e->type == MotionNotify) {
-    x = e->xmotion.x;
-    y = e->xmotion.y;
-    state = e->xmotion.state;
-    button = 0;
-  } else {
-    x = e->xbutton.x;
-    y = e->xbutton.y;
-    state = e->xbutton.state;
-    button = e->xbutton.button;
-  }
-  gmorph_gl_pointer_event((int) cld, evtype, button, state, x, y);
-}
 
 void gmorph_gl_pointer_event(int i, int event_type, unsigned int button,
 			     unsigned int state, int x, int y)

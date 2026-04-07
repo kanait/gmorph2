@@ -178,8 +178,6 @@ public:
 protected:
   void initializeGL() override
   {
-    gmorph_qt_bridge_init_font_display();
-    gmorph_qt_bridge_bind_screen_display(screenIdx_);
     gmorph_qt_bridge_init_gl_screen(screenIdx_);
   }
 

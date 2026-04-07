@@ -5,7 +5,11 @@
 #include "gldef.h"
 #include "smd.h"
 
+#if defined(__APPLE__)
+#include <OpenGL/glu.h>
+#else
 #include <GL/glu.h>
+#endif
 
 void definelinestyle(void)
 {
@@ -243,34 +247,10 @@ void glu_cylinder( Vec *sv, Vec *ev, double rad )
   
 int makerasterfont(ScreenAtr *screen, char *fontname)
 {
-  XFontStruct *fontInfo;
-  Font  id;
-  unsigned int first, last;
-  Display *dpy;
-
-  if (screen->x11_display != NULL)
-    dpy = (Display *) screen->x11_display;
-  else
-    dpy = XtDisplay(screen->glw);
-
-  fontInfo = XLoadQueryFont(dpy, fontname);
-  if (fontInfo == NULL) {
-    fprintf(stderr, "No font found.\n");
-    return FAIL;
-  }
-  id = fontInfo->fid;
-  first = fontInfo->min_char_or_byte2;
-  last = fontInfo->max_char_or_byte2;
-
-  screen->fontOffset = glGenLists(last + 1);
-  if (screen->fontOffset == 0) {
-    fprintf(stderr, "Out of display lists.\n");
-    return FAIL;
-  }
-  glXUseXFont(id, first, last - first + 1,
-	      (GLuint) screen->fontOffset + first);
-
-  return SUCCEED;
+  (void) fontname;
+  if (screen)
+    screen->fontOffset = 0;
+  return FAIL;
 }
 
 int printstring(ScreenAtr *screen, char *s)

@@ -860,6 +860,7 @@ int line_square_intersection(QRange *qr, Vec2d *svec, Vec2d *evec)
     if (c == INSIDE) return INTERSECTION;
     return OUTSIDE;
   } else if (icnt == 2) return INTERSECTION;
+  return OUTSIDE;
 }
     
 int vertex_line(Vec2d *v, Vec2d *ev1, Vec2d *ev2)

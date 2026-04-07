@@ -1,5 +1,9 @@
 /* Copyright (c) 1997 Takashi Kanai; All rights reserved. */
 
+#if !GMORPH_ENABLE_RENDERING
+typedef double GLdouble;
+#endif
+
 static GLdouble alicebluevec[]	 = {0.941, 0.973, 1.000}; 
 static GLdouble antiquewhite1vec[]	 = {1.000, 0.937, 0.859}; 
 static GLdouble antiquewhite2vec[]	 = {0.933, 0.875, 0.800}; 
